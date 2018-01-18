@@ -15,8 +15,8 @@ def check_log_dir(dir_name):
         pass
 
 check_log_dir(LOG_PATH)
-logger = logging.getLogger('AirCombat')
-log_file = os.path.join(LOG_PATH, 'ai.log')
+logger = logging.getLogger('ai_bms')
+log_file = os.path.join(LOG_PATH, 'ai_bms.log')
 handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=MAX_LOG_SIZE, backupCount=LOG_BACKUP_NUM)
 formatter = logging.Formatter('%(asctime)s %(process)d %(processName)s %(thread)d %(threadName)s %(levelname)s %(message)s')
 handler.setFormatter(formatter)

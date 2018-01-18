@@ -251,7 +251,8 @@ class Worker():
 
 max_episode_length = 300
 gamma = .99  # discount rate for advantage estimation and reward discounting
-s_size = 7056  # Observations are greyscale frames of 84 * 84 * 1
+# 7个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置，TD框右侧的2个读数。
+s_size = 7
 # 10个动作依次为：无,仰角上/中/下,扫描角度增/减,扫描线数增/减,TD框左/右
 a_size = 10
 
