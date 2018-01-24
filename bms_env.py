@@ -76,6 +76,6 @@ class BmsEnv:
             self.send_ctrl_cmd('3')
             self.episode = 0
 
-    # # 1: start; 2: stop; 3: reboot
-    # def send_ctrl_cmd(self, cmd):
-    #     self.bms_control_proxy.RPCserverForGameserver(cmd)
+    # 1: start; 2: stop; 3: reboot
+    def send_ctrl_cmd(self, cmd):
+        self.bms_control_proxy.RPCserverForGameserver(cmd)
