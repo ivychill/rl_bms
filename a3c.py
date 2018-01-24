@@ -182,6 +182,7 @@ class Worker():
                 rnn_state = self.local_AC.state_init
                 if done:
                     observation = self.env.reset()
+                    logger.debug("state from reset: ")
                     state = preprocess(observation)
                     done = False
                 reward = 0.0
@@ -251,12 +252,12 @@ class Worker():
 
 max_episode_length = 300
 gamma = .99  # discount rate for advantage estimation and reward discounting
-# 7个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置，TD框右侧的2个读数。
+# 8个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置(x,y)，TD框右侧的2个读数。
 s_size = 7
-# 10个动作依次为：无,仰角上/中/下,扫描角度增/减,扫描线数增/减,TD框左/右
-a_size = 10
+# 8个动作依次为：无,仰角上/中/下,扫描角度,扫描线数,TD框左/右
+a_size = 8
 
-load_model = True
+load_model = False
 MODEL_PATH = './model'
 SUMMARY_PATH = './summary/train_'
 EPISODE_BATCH_SIZE = 100
@@ -272,7 +273,7 @@ global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainab
 trainer = tf.train.AdamOptimizer(learning_rate=2e-5)
 master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
 # num_workers = multiprocessing.cpu_count()  # Set workers ot number of available CPU threads
-num_workers = 12
+num_workers = 1
 workers = []
 # Create worker classes
 for i in range(num_workers):
