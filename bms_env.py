@@ -2,9 +2,8 @@
 
 import numpy as np
 import xmlrpclib
-# import numpy as np
-from log_config import *
 import time
+from log_config import *
 from socket import *
 
 class BmsEnv:
@@ -18,12 +17,17 @@ class BmsEnv:
         self.bms_addr = ("92.168.24.92", 4001)
         self.episode = 0
         self.step_eps = 0
+        self.enemy_appear_ever = False
+        self.enemy_appear_last = time.time()
 
     # "1": start
     # "2": pause
     # "3": restart
     def reset(self):
         logger.info('reset...')
+        self.enemy_appear_ever = False
+        self.enemy_appear_last = time.time()
+        self.fly_proxy.prepare()
         self.send_ctrl_cmd('1')
         self.image_proxy.start()
         self.fly_proxy.start()
@@ -49,14 +53,25 @@ class BmsEnv:
 
         enemy_coord = self.image_proxy.get_enemy_coord()
 
-        if self.step_eps >= 1000:
+        # done的条件为超过500步， 机出现在MFD中至少2秒
+        if self.step_eps >= 500:
+            logger.warn("reach 500 steps, done!")
             self.finalize()
             done = True
         elif enemy_coord is not None:
-            self.finalize()
-            done = True
-            reward += 1000
+            logger.debug("enemy appear...")
+            self.enemy_appear_ever = True
+            if time.time() - self.enemy_appear_last >= 2:
+                logger.warn("enemy appear for more than 2 seconds, done!")
+                self.finalize()
+                done = True
+                reward += 500
+            else:
+                done = False
         else:
+            logger.debug("enemy disappear...")
+            self.enemy_appear_last = time.time()
+            self.enemy_appear_ever = False
             done = False
 
         return state, reward, done, {}
@@ -64,7 +79,12 @@ class BmsEnv:
     def get_state(self):
         z, speed, pitch, yaw = self.fly_proxy.get_fly_state()
         td_topleft, upper, lower = self.image_proxy.get_td()
+        while td_topleft is None:
+            logger.warn("get td_topleft none")
+            time.sleep(0.05)
+            td_topleft, upper, lower = self.image_proxy.get_td()
         state = np.asarray([z, speed, pitch, yaw, td_topleft[0], td_topleft[1], upper, lower])
+        logger.debug("state: %s" % (state))
         return state
 
     def finalize(self):
@@ -72,7 +92,8 @@ class BmsEnv:
         self.image_proxy.stop()
         self.send_ctrl_cmd('2')
         self.episode += 1
-        if self.episode >= 20:
+        if self.episode >= 5:
+            logger.warn("reboot...")
             self.send_ctrl_cmd('3')
             self.episode = 0
 

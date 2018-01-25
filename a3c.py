@@ -147,7 +147,7 @@ class Worker():
         # Generate network statistics to periodically save
         rnn_state = self.local_AC.state_init
         feed_dict = {self.local_AC.target_v: discounted_rewards,
-                     self.local_AC.inputs: np.vstack(observations),
+                     self.local_AC.state_input: np.vstack(observations),
                      self.local_AC.actions: actions,
                      self.local_AC.advantages: advantages,
                      self.local_AC.state_in[0]: rnn_state[0],
@@ -171,7 +171,7 @@ class Worker():
         total_steps = 0
         reward_sum = 0
         logger.warn("Starting worker %d" % (self.number))
-        done = True
+
         with sess.as_default(), sess.graph.as_default():
             while not coord.should_stop():
                 sess.run(self.update_local_ops)
@@ -179,29 +179,30 @@ class Worker():
                 episode_values = []
                 episode_reward = 0
                 episode_step_count = 0
+                done = False
+
                 rnn_state = self.local_AC.state_init
-                if done:
-                    observation = self.env.reset()
-                    logger.debug("state from reset: ")
-                    state = preprocess(observation)
-                    done = False
-                reward = 0.0
-                while (reward == 0.0 and (not done)):
+
+                observation = self.env.reset()
+                state = preprocess(observation)
+
+                while (not done):
                     # self.env.render()
                     # Take an action using probabilities from policy network output.
                     a_dist, value, rnn_state = sess.run(
                         [self.local_AC.policy, self.local_AC.value, self.local_AC.state_out],
-                        feed_dict={self.local_AC.inputs: [state],
+                        feed_dict={self.local_AC.state_input: [state],
                                    self.local_AC.state_in[0]: rnn_state[0],
                                    self.local_AC.state_in[1]: rnn_state[1]})
                     action = self.sample(a_dist[0])
+                    sleep(0.2)
                     observation, reward, done, info = self.env.step(action)
                     state1 = preprocess(observation)
                     episode_buffer.append([state, action, reward, state1, done, value[0, 0]])
                     episode_values.append(value[0, 0])
                     episode_reward += reward
-                    # if reward != 0.0:
-                    #     logger.debug('%s episode: %d, action: %d, %d, reward: %d, done: %r' % (self.name, local_episode_count, action, env_action, reward, done))
+                    logger.debug('%s episode: %d, step: %d, state: %s, action: %d, reward: %d, done: %r'
+                                 % (self.name, local_episode_count, episode_step_count, state, action, reward, done))
                     reward_sum += reward
                     total_steps += 1
                     episode_step_count += 1
@@ -253,7 +254,7 @@ class Worker():
 max_episode_length = 300
 gamma = .99  # discount rate for advantage estimation and reward discounting
 # 8个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置(x,y)，TD框右侧的2个读数。
-s_size = 7
+s_size = 8
 # 8个动作依次为：无,仰角上/中/下,扫描角度,扫描线数,TD框左/右
 a_size = 8
 
