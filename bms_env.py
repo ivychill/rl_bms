@@ -25,12 +25,13 @@ class BmsEnv:
     # "3": restart
     def reset(self):
         logger.info('reset...')
+        # self.fly_proxy.prepare()
+        self.fly_proxy.start()
+        self.image_proxy.start()
+        self.send_ctrl_cmd('1')
+        logger.info('reset return...')
         self.enemy_appear_ever = False
         self.enemy_appear_last = time.time()
-        self.fly_proxy.prepare()
-        self.send_ctrl_cmd('1')
-        self.image_proxy.start()
-        self.fly_proxy.start()
         self.step_eps = 0
         state = self.get_state()
         return state
@@ -53,21 +54,29 @@ class BmsEnv:
 
         enemy_coord = self.image_proxy.get_enemy_coord()
 
-        # done的条件为超过500步， 机出现在MFD中至少2秒
+        # done的条件为超过500步,飞机出现在MFD中至少2秒,飞机被击中,z<=4000
         if self.step_eps >= 500:
             logger.warn("reach 500 steps, done!")
             self.finalize()
             done = True
+        elif state[0] <= 4000:  # z = state[0]
+            logger.warn("latitude less than 1000, done!")
+            self.finalize()
+            done = True
+        elif self.fly_proxy.is_dead():
+            logger.warn("shot by enemy, done!")
+            self.finalize()
+            done = True
         elif enemy_coord is not None:
             logger.debug("enemy appear...")
-            self.enemy_appear_ever = True
-            if time.time() - self.enemy_appear_last >= 2:
+            if time.time() - self.enemy_appear_last >= 2 and self.enemy_appear_ever:
                 logger.warn("enemy appear for more than 2 seconds, done!")
                 self.finalize()
                 done = True
                 reward += 500
             else:
                 done = False
+            self.enemy_appear_ever = True
         else:
             logger.debug("enemy disappear...")
             self.enemy_appear_last = time.time()
@@ -78,23 +87,34 @@ class BmsEnv:
 
     def get_state(self):
         z, speed, pitch, yaw = self.fly_proxy.get_fly_state()
-        td_topleft, upper, lower = self.image_proxy.get_td()
-        while td_topleft is None:
-            logger.warn("get td_topleft none")
-            time.sleep(0.05)
-            td_topleft, upper, lower = self.image_proxy.get_td()
-        state = np.asarray([z, speed, pitch, yaw, td_topleft[0], td_topleft[1], upper, lower])
+        # td_topleft = self.image_proxy.get_td()
+        # upper, lower = self.image_proxy.get_td_high_low()
+        # while td_topleft is None\
+        #         or upper is None\
+        #         or lower is None:
+        #     logger.warn("get td_topleft or upper or lower none")
+        #     time.sleep(0.05)
+        #     td_topleft = self.image_proxy.get_td()
+        #     upper, lower = self.image_proxy.get_td_high_low()
+        # state = np.asarray([z, speed, pitch, yaw, td_topleft[0], td_topleft[1], upper, lower])
+        state = np.asarray([z, speed, pitch, yaw])
         logger.debug("state: %s" % (state))
         return state
 
     def finalize(self):
-        self.fly_proxy.stop()
-        self.image_proxy.stop()
-        self.send_ctrl_cmd('2')
         self.episode += 1
-        if self.episode >= 5:
+        if self.episode < 5:
+            logger.warn("stop...")
+            self.fly_proxy.stop()
+            self.image_proxy.stop()
+            self.send_ctrl_cmd('2')
+            logger.info('stop return...')
+        else:
             logger.warn("reboot...")
+            self.fly_proxy.reboot()
+            self.image_proxy.reboot()
             self.send_ctrl_cmd('3')
+            logger.info('reboot return...')
             self.episode = 0
 
     # 1: start; 2: stop; 3: reboot

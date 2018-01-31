@@ -218,9 +218,9 @@ class Worker():
 
                 # Periodically save gifs of episodes, model parameters, and summary statistics.
                 if local_episode_count % EPISODE_BATCH_SIZE == (EPISODE_BATCH_SIZE - 1):
-                    mean_reward = np.mean(self.episode_rewards[-5:])
-                    mean_length = np.mean(self.episode_lengths[-5:])
-                    mean_value = np.mean(self.episode_mean_values[-5:])
+                    mean_reward = np.mean(self.episode_rewards[-EPISODE_BATCH_SIZE:])
+                    mean_length = np.mean(self.episode_lengths[-EPISODE_BATCH_SIZE:])
+                    mean_value = np.mean(self.episode_mean_values[-EPISODE_BATCH_SIZE:])
                     summary = tf.Summary()
                     summary.value.add(tag='Perf/Reward', simple_value=float(mean_reward))
                     summary.value.add(tag='Perf/Length', simple_value=float(mean_length))
@@ -253,8 +253,10 @@ class Worker():
 
 max_episode_length = 300
 gamma = .99  # discount rate for advantage estimation and reward discounting
-# 8个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置(x,y)，TD框右侧的2个读数。
-s_size = 8
+# # 8个状态依次为：自己飞机的z, speed, pitch, yaw；TD框左上角位置(x,y), TD框右侧的2个读数。
+# s_size = 8
+# 4个状态依次为：自己飞机的z, speed, pitch, yaw
+s_size = 4
 # 8个动作依次为：无,仰角上/中/下,扫描角度,扫描线数,TD框左/右
 a_size = 8
 
@@ -262,7 +264,7 @@ load_model = False
 MODEL_PATH = './model'
 SUMMARY_PATH = './summary/train_'
 EPISODE_BATCH_SIZE = 100
-SAVE_INTERVAL = 1000
+SAVE_INTERVAL = 100
 
 tf.reset_default_graph()
 
