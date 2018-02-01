@@ -14,7 +14,7 @@ class BmsEnv:
         self.image_proxy = xmlrpclib.ServerProxy("http://192.168.20.129:5001/")
         # self.image_proxy = xmlrpclib.ServerProxy("http://192.168.24.108:5001/")
         self.bms_socket = socket(AF_INET, SOCK_DGRAM)
-        self.bms_addr = ("92.168.24.92", 4001)
+        self.bms_addr = ("192.168.20.122", 4001)
         self.episode = 0
         self.step_eps = 0
         self.enemy_appear_ever = False
