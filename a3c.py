@@ -195,14 +195,14 @@ class Worker():
                                    self.local_AC.state_in[0]: rnn_state[0],
                                    self.local_AC.state_in[1]: rnn_state[1]})
                     action = self.sample(a_dist[0])
-                    sleep(0.2)
+                    sleep(0.5)
                     observation, reward, done, info = self.env.step(action)
                     state1 = preprocess(observation)
                     episode_buffer.append([state, action, reward, state1, done, value[0, 0]])
                     episode_values.append(value[0, 0])
                     episode_reward += reward
-                    logger.debug('%s episode: %d, step: %d, state: %s, action: %d, reward: %d, done: %r'
-                                 % (self.name, local_episode_count, episode_step_count, state, action, reward, done))
+                    # logger.debug('%s episode: %d, step: %d, state: %s, action: %d, reward: %d, done: %r'
+                    #              % (self.name, local_episode_count, episode_step_count, state, action, reward, done))
                     reward_sum += reward
                     total_steps += 1
                     episode_step_count += 1

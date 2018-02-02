@@ -21,4 +21,7 @@ handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=MAX_LOG_SIZE, 
 formatter = logging.Formatter('%(asctime)s %(process)d %(processName)s %(threadName)s %(filename)s %(lineno)d %(levelname)s %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(formatter)
+logger.addHandler(consoleHandler)
 logger.setLevel(logging.DEBUG)
