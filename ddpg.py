@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
-import os
-from ou_noise import OUNoise
-# from OU import OU
+import math
+# from ou_noise import OUNoise
+from OU import OU
 from critic_network import CriticNetwork
 from actor_network import ActorNetwork
 from replay_buffer import ReplayBuffer
@@ -19,6 +19,7 @@ BATCH_SIZE = 64
 GAMMA = 0.99
 MODEL_PATH = './model'
 
+
 class DDPG:
     def __init__(self, env):
         self.name = 'DDPG' # name for uploading results
@@ -26,9 +27,9 @@ class DDPG:
         # Randomly initialize actor network and critic network
         # with both their target networks
         # self.state_dim = env.observation_space.shape[0]
-        self.state_dim = 64
+        self.state_dim = 20
         # self.action_dim = env.action_space.shape[0]
-        self.action_dim = 1
+        self.action_dim = 3
 
         self.time_step = 0
         self.sess = tf.InteractiveSession()
@@ -41,7 +42,8 @@ class DDPG:
 
         # Initialize a random process the Ornstein-Uhlenbeck process for action exploration
         # self.exploration_noise = OUNoise(self.action_dim)
-        self.exploration_noise = OUNoise()
+        # self.exploration_noise = OUNoise()
+        self.OU = OU()
         # loading networks
         self.saver = tf.train.Saver()
         checkpoint = tf.train.get_checkpoint_state(MODEL_PATH)
@@ -88,11 +90,25 @@ class DDPG:
         self.actor_network.update_target()
         self.critic_network.update_target()
 
-    def noise_action(self,state):
+    # def noise_action(self,state):
+    #     # Select action a_t according to the current policy and exploration noise
+    #     action = self.actor_network.action(state)
+    #     noise = self.exploration_noise.noise(action)
+    #     noise_action = action + noise
+    #     clipped_noise_action = np.clip(noise_action, 0, 1)
+    #     return clipped_noise_action
+
+    def noise_action(self,state,epsilon):
         # Select action a_t according to the current policy and exploration noise
+        # logger.debug("predict begin...")
         action = self.actor_network.action(state)
-        noise = self.exploration_noise.noise(action)
+        # logger.debug("predict end...")
+        noise = np.zeros(self.action_dim)
+        noise[0] = epsilon * self.OU.function(action[0], 0.3, 1.00, 0.10)
+        noise[1] = epsilon * self.OU.function(action[1], 0.9, 1.00, 0.10)
+        noise[2] = epsilon * self.OU.function(action[2], 0.1, 1.00, 0.10)
         noise_action = action + noise
+        logger.debug("action: %s, noise: %s" % (action, noise))
         clipped_noise_action = np.clip(noise_action, 0, 1)
         return clipped_noise_action
 
@@ -108,6 +124,7 @@ class DDPG:
 
         # Store transitions to replay start size then start training
         if self.replay_buffer.count() >  REPLAY_START_SIZE:
+            # logger.info("train...")
             self.train()
 
         #if self.time_step % 10000 == 0:

@@ -28,7 +28,10 @@ class BmsEnv:
         logger.info('start bms...')
         self.send_ctrl_cmd('1')
         logger.info('start fly control...')
-        self.fly_proxy.start()
+        rtn = self.fly_proxy.start()
+        if rtn == -1:
+           return None
+
         logger.info('start image rec...')
         self.image_proxy.start()
         logger.info('reset over...')
@@ -63,7 +66,7 @@ class BmsEnv:
             self.finalize()
             done = True
         elif state[0] <= 5000:  # z = state[0]
-            # logger.warn("latitude less than 5000, done!")
+            # logger.warn("altitude less than 5000, done!")
             self.finalize()
             done = True
         elif self.fly_proxy.is_dead():
@@ -106,7 +109,7 @@ class BmsEnv:
 
     def finalize(self):
         self.episode += 1
-        if self.episode < 5:
+        if self.episode < 1:
             logger.warn("stop...")
             self.image_proxy.stop()
             self.fly_proxy.stop()
@@ -116,9 +119,16 @@ class BmsEnv:
             logger.warn("reboot...")
             self.image_proxy.reboot()
             self.fly_proxy.reboot()
-            self.send_ctrl_cmd('3')
+            #self.send_ctrl_cmd('3')
             logger.info('reboot return...')
             self.episode = 0
+
+    def firstRun(self):
+        logger.warn("reboot eng...")
+        #self.image_proxy.reboot()
+        #self.fly_proxy.reboot()
+        self.send_ctrl_cmd('3')
+        logger.info('reboot eng ok...')
 
     # 1: start; 2: stop; 3: reboot
     def send_ctrl_cmd(self, cmd):

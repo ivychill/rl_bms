@@ -1,7 +1,5 @@
-cd ~/project/image_rec
-python ai_main.py&
-cd ~/project/fly_control_bms
+cd ~/project/fly_control_bms_v2
 python AiMain.py&
 sleep 1
 cd ~/project/ai_bms
-python a3c.py&
+python fly_ai_main.py&

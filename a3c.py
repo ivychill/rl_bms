@@ -183,30 +183,41 @@ class Worker():
 
                 rnn_state = self.local_AC.state_init
 
+                self.env.firstRun()
                 observation = self.env.reset()
+
+                while observation == None:
+                    sleep(10)
+                    logger.warn("firstRun failure.....")
+                    self.env.firstRun()
+                    observation = self.env.reset()
+
                 state = preprocess(observation)
 
                 while (not done):
                     # self.env.render()
                     # Take an action using probabilities from policy network output.
-                    a_dist, value, rnn_state = sess.run(
-                        [self.local_AC.policy, self.local_AC.value, self.local_AC.state_out],
-                        feed_dict={self.local_AC.state_input: [state],
-                                   self.local_AC.state_in[0]: rnn_state[0],
-                                   self.local_AC.state_in[1]: rnn_state[1]})
-                    action = self.sample(a_dist[0])
-                    sleep(0.5)
-                    observation, reward, done, info = self.env.step(action)
-                    state1 = preprocess(observation)
-                    episode_buffer.append([state, action, reward, state1, done, value[0, 0]])
-                    episode_values.append(value[0, 0])
-                    episode_reward += reward
-                    # logger.debug('%s episode: %d, step: %d, state: %s, action: %d, reward: %d, done: %r'
-                    #              % (self.name, local_episode_count, episode_step_count, state, action, reward, done))
-                    reward_sum += reward
-                    total_steps += 1
-                    episode_step_count += 1
-                    state = state1
+                    try:
+                        a_dist, value, rnn_state = sess.run(
+                            [self.local_AC.policy, self.local_AC.value, self.local_AC.state_out],
+                            feed_dict={self.local_AC.state_input: [state],
+                                       self.local_AC.state_in[0]: rnn_state[0],
+                                       self.local_AC.state_in[1]: rnn_state[1]})
+                        action = self.sample(a_dist[0])
+                        sleep(0.5)
+                        observation, reward, done, info = self.env.step(action)
+                        state1 = preprocess(observation)
+                        episode_buffer.append([state, action, reward, state1, done, value[0, 0]])
+                        episode_values.append(value[0, 0])
+                        episode_reward += reward
+                        logger.debug('%s episode: %d, step: %d, state: %s, action: %d, reward: %d, done: %r'
+                                     % (self.name, local_episode_count, episode_step_count, state, action, reward, done))
+                        reward_sum += reward
+                        total_steps += 1
+                        episode_step_count += 1
+                        state = state1
+                    except Exception,e:
+                        logger.debug('Exception: %s' %e)
 
                 self.episode_rewards.append(episode_reward)
                 self.episode_lengths.append(episode_step_count)
@@ -260,7 +271,7 @@ s_size = 4
 # 8个动作依次为：无,仰角上/中/下,扫描角度,扫描线数,TD框左/右
 a_size = 8
 
-load_model = False
+load_model = True
 MODEL_PATH = './model'
 SUMMARY_PATH = './summary/train_'
 EPISODE_BATCH_SIZE = 100
