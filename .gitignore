@@ -99,7 +99,7 @@ ENV/
 config.ini
 .idea/
 .mypy_cache/
-log/
+log**/
 model/
 summary/
 monitor/
