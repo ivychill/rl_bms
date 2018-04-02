@@ -11,12 +11,13 @@ def playGame():
     env = FlyEnv()
     agent = DDPG(env)
 
+    EPISODE_BATCH_SIZE = 100
     epsilon = 1.0
     explore_count = 300000.0
     episode_count = 1000000
     step = 0
-    best_reward = 0
-    best_shaped_reward = 0
+    best_reward = 10
+    reward_sum = 0
 
     # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
     s_t0 = np.zeros((5 * 4))
@@ -24,12 +25,12 @@ def playGame():
 
     logger.warn("Experiment Start...")
     for episode in range(episode_count):
-        total_reward = 0.
+        episode_reward = 0.
         step_eps = 0.
         done = False
         # x_t = env.reset()
         s_t = env.reset()
-        logger.debug("s_t: %s" % s_t)
+        # logger.debug("s_t: %s" % s_t)
 
         while not done: # while FlyCtrl not break, collect normal buffer
             # Take noisy actions during agent training
@@ -44,29 +45,32 @@ def playGame():
 
             x_t1, r_t, done, _ = env.step(a_t)
             time.sleep(0.1)
-
             s_t1 = np.append(s_t[5:],x_t1) # stack continious 4 frames
-            logger.debug("s_t1: %s" % s_t1)
 
             if (train_indicator):
                 agent.perceive(s_t,a_t,r_t,s_t1,done) # save the transition in the buffer
                 # logger.debug("s_t: %s, a_t: %s, r_t: %s, s_t1: %s, done: %s" % (s_t, a_t, r_t, s_t1, done))
+                logger.info("episode: %d, step_eps: %d, reward: %s" % (episode, step_eps, r_t))
 
             s_t = s_t1
             step += 1
             step_eps += 1
-            total_reward += r_t
+            episode_reward += r_t
 
-        # logger.debug("r_t: %s" % r_t)
-        logger.debug("s_t: %s, a_t: %s, r_t: %s, s_t1: %s, done: %s" % (s_t, a_t, r_t, s_t1, done))
-        logger.info("episode: %s, step_eps: %s, step: %s, reward: %s, replay buffer: %s" % (episode, step_eps, step, total_reward, agent.replay_buffer.count()))
+        logger.info("episode: %d, step_eps: %d, step: %d, total reward: %s, replay buffer: %d" % (episode, step_eps, step, episode_reward, agent.replay_buffer.count()))
 
-        # Saving the best model.
-        if total_reward >= best_reward:
-            if (train_indicator):
-                logger.info("Now we save model with reward %s, previous best reward %s shaped %s" % (total_reward, best_reward, best_shaped_reward))
-                best_reward = total_reward
-                agent.saveNetwork()
+        reward_sum += episode_reward
+        if episode % EPISODE_BATCH_SIZE == (EPISODE_BATCH_SIZE - 1):
+            reward_average = reward_sum / EPISODE_BATCH_SIZE
+            logger.warn('episode %d, average reward %f' % (episode, reward_average))
+            if reward_average >= best_reward:
+                if (train_indicator):
+                    logger.info(
+                        "Now we save model with reward %s, previous best reward %s" % (reward_average, best_reward))
+                    best_reward = episode_reward
+                    agent.saveNetwork()
+
+            reward_sum = 0
 
             # total_reward_test = 0
             # for i in xrange(test_eps):
