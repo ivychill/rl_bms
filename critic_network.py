@@ -3,11 +3,11 @@ import numpy as np
 import math
 
 
-LAYER1_SIZE = 400
-LAYER2_SIZE = 300
+LAYER1_SIZE = 300
+LAYER2_SIZE = 600
 LEARNING_RATE = 1e-3
 TAU = 0.001
-L2 = 0.01
+L2 = 0.0001
 
 
 class CriticNetwork:
@@ -83,11 +83,12 @@ class CriticNetwork:
 
 	def train(self,y_batch,state_batch,action_batch):
 		self.time_step += 1
-		self.sess.run(self.optimizer,feed_dict={
+		cost, _ = self.sess.run([self.cost, self.optimizer],feed_dict={
 			self.y_input:y_batch,
 			self.state_input:state_batch,
 			self.action_input:action_batch
 			})
+		return cost
 
 	def gradients(self,state_batch,action_batch):
 		return self.sess.run(self.action_gradients,feed_dict={

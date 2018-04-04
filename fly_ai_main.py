@@ -3,7 +3,7 @@ from ddpg import *
 from fly_env import *
 
 is_training = True         #True means Train, False means simply Run
-# np.random.seed(1337)
+np.random.seed(1337)
 
 
 def playGame():
@@ -11,13 +11,18 @@ def playGame():
     env = FlyEnv()
     agent = DDPG(env)
 
+
     EPISODE_BATCH_SIZE = 100
     epsilon = 1.0
     explore_count = 300000.0
     episode_count = 1000000
     step = 0
-    best_reward = 10
+    best_reward = -300
     reward_sum = 0
+    SUMMARY_PATH = './summary'
+
+    summary_writer = tf.summary.FileWriter(SUMMARY_PATH)
+    summary = tf.Summary()
 
     # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
     s_t0 = np.zeros((5 * 4))
@@ -50,23 +55,29 @@ def playGame():
             if (train_indicator):
                 agent.perceive(s_t,a_t,r_t,s_t1,done) # save the transition in the buffer
                 # logger.debug("s_t: %s, a_t: %s, r_t: %s, s_t1: %s, done: %s" % (s_t, a_t, r_t, s_t1, done))
-                logger.info("episode: %d, step_eps: %d, reward: %s" % (episode, step_eps, r_t))
+                logger.info("episode: %d, step_eps: %d, step_reward: %s" % (episode, step_eps, r_t))
 
             s_t = s_t1
             step += 1
             step_eps += 1
             episode_reward += r_t
 
-        logger.info("episode: %d, step_eps: %d, step: %d, total reward: %s, replay buffer: %d" % (episode, step_eps, step, episode_reward, agent.replay_buffer.count()))
+        logger.info("episode: %d, step_eps: %d, step: %d, episode_reward: %s, replay buffer: %d" % (episode, step_eps, step, episode_reward, agent.replay_buffer.count()))
 
         reward_sum += episode_reward
         if episode % EPISODE_BATCH_SIZE == (EPISODE_BATCH_SIZE - 1):
-            reward_average = reward_sum / EPISODE_BATCH_SIZE
-            logger.warn('episode %d, average reward %f' % (episode, reward_average))
-            if reward_average >= best_reward:
+            average_reward = reward_sum / EPISODE_BATCH_SIZE
+            logger.warn('episode %d, average reward %f' % (episode, average_reward))
+
+            summary.value.add(tag='reward', simple_value=float(average_reward))
+            summary.value.add(tag='critic_loss', simple_value=float(env.critic_cost))
+            summary_writer.add_summary(summary, episode)
+            summary_writer.flush()
+
+            if average_reward >= best_reward:
                 if (train_indicator):
                     logger.info(
-                        "Now we save model with reward %s, previous best reward %s" % (reward_average, best_reward))
+                        "Now we save model with reward %s, previous best reward %s" % (average_reward, best_reward))
                     best_reward = episode_reward
                     agent.saveNetwork()
 
@@ -84,6 +95,8 @@ def playGame():
             #         # logger.debug("test action: %s, reward: %s, total reward: %s" % (action_test, reward_test, total_reward_test))
             # ave_reward = total_reward_test / test_eps
             # logger.info("Episode: %s, Evaluation Average Reward: %s" % (episode, ave_reward))
+
+        env.finalize()
 
     logger.warn("Finish...")
 

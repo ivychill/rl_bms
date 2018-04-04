@@ -9,8 +9,6 @@ from critic_network import CriticNetwork
 from actor_network import ActorNetwork
 from replay_buffer import ReplayBuffer
 from log_config import *
-import random
-import log_config
 
 
 # Hyper Parameters:
@@ -80,7 +78,7 @@ class DDPG:
                 y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
         y_batch = np.resize(y_batch,[BATCH_SIZE,1])
         # Update critic by minimizing the loss L
-        self.critic_network.train(y_batch,state_batch,action_batch)
+        self.critic_cost = self.critic_network.train(y_batch,state_batch,action_batch)
 
         # Update the actor policy using the sampled gradient:
         action_batch_for_gradients = self.actor_network.actions(state_batch)
@@ -120,24 +118,17 @@ class DDPG:
         x_mu = 0.5 + (self.environment.roll_start - cur_roll) * 0.4
         x_mu = x_mu + cur_speed_vector * 1.0
         proposed_speed_vector = (self.environment.altitude_start - cur_altitude)/100 * math.pi/180
-        logger.debug("proposed_speed_vector: %s" % (proposed_speed_vector))
-        y_mu = 0.64 + (proposed_speed_vector - cur_speed_vector) * 1.0
-        z_mu = 0.4 - (self.environment.speed_start - cur_speed) * 0.01
+        # logger.debug("proposed_speed_vector: %s" % (proposed_speed_vector))
+        y_mu = 0.7 + (proposed_speed_vector - cur_speed_vector) * 1.0
+        z_mu = 0.25 - (self.environment.speed_start - cur_speed) * 0.01
         z_mu = z_mu + (self.environment.roll_start - cur_roll) * 0.5
         # z_mu = z_mu - cur_speed_vector * 2
-        # logger.debug("self.environment.roll_start: %s, cur_roll: %s, cur_speed_vector: %s"
-        #              % (self.environment.roll_start, cur_roll, cur_speed_vector))
-
-        # logger.debug("height: %s, speed: %s, roll: %s, pitch: %s, speed_vector: %s"
-        #              % (cur_altitude, cur_speed, cur_roll * 180 / math.pi, cur_pitch * 180 / math.pi,
-        #                 cur_speed_vector * 180 / math.pi))
         logger.debug("x_mu: %s, y_mu: %s, z_mu: %s" % (x_mu, y_mu, z_mu))
-
-        # noise[0] = epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
-        # noise[1] = epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
-        # noise[2] = epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
-        # noise_action = action + noise
-        noise_action = [x_mu, y_mu, z_mu]
+        # noise_action = [x_mu, y_mu, z_mu]
+        noise[0] = epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
+        noise[1] = epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
+        noise[2] = epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
+        noise_action = action + noise
         logger.debug("action: %s, noise: %s" % (action, noise))
         clipped_noise_action = np.clip(noise_action, 0, 1)
         return clipped_noise_action

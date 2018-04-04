@@ -23,11 +23,16 @@ class FlyEnv:
         self.episode = 0
         self.step_eps = 0
         # self.RANGE_ALTITUDE = (3000, 21000)
-        self.RANGE_ALTITUDE = (6000, 18000)
-        self.RANGE_SPEED = (160, 640)
-        self.RANGE_ROLL = (-math.pi, math.pi)
-        self.RANGE_PITCH = (-math.pi, math.pi)
-        self.RANGE_SPEED_VECTOR = (-math.pi, math.pi)
+        # self.RANGE_ALTITUDE = (6000, 18000)
+        self.RANGE_ALTITUDE = (10000, 14000)
+        # self.RANGE_SPEED = (160, 640)
+        self.RANGE_SPEED = (320, 480)
+        # self.RANGE_ROLL = (-math.pi, math.pi)
+        # self.RANGE_PITCH = (-math.pi, math.pi)
+        # self.RANGE_SPEED_VECTOR = (-math.pi, math.pi)
+        self.RANGE_ROLL = (math.pi*11/36, math.pi*19/36)
+        self.RANGE_PITCH = (-math.pi/9, math.pi/9)
+        self.RANGE_SPEED_VECTOR = (-math.pi/9, math.pi/9)
         self.RANGE_ACTION = (1, 32766)
 
         # self.altitude_start = self.RANGE_ALTITUDE[0] + (self.RANGE_ALTITUDE[1] - self.RANGE_ALTITUDE[0]) * random.uniform(0, 1)
@@ -137,7 +142,7 @@ class FlyEnv:
         # self.deviation_roll = self.roll/self.roll_start - 1
         self.deviation_altitude = abs(self.altitude-self.altitude_start)
         self.deviation_speed = abs(self.speed-self.speed_start)
-        self.deviation_roll = abs(self.roll/self.roll_start - 1)
+        self.deviation_roll = abs(self.roll-self.roll_start)
 
         return np.asarray([normalized_altitude, normalized_speed, normalized_roll, normalized_pitch, normalized_speed_vector])
 
@@ -151,7 +156,8 @@ class FlyEnv:
         reward = reward\
                  - self.deviation_altitude / self.TOLERANCE_ALTITUDE\
                  - self.deviation_speed / self.TOLERANCE_SPEED\
-                 - self.deviation_roll / self.TOLERANCE_ROLL
+                 - self.deviation_roll / self.TOLERANCE_ROLL\
+                 - abs(self.speed_vector) / self.TOLERANCE_SPEED_VECTOR
 
         # punish if gs > 8 and gs < -1.5
         # reward = reward - max((self.gs - 8), 0) * 10 - abs(min((self.gs + 1.5), 0)) * 10
@@ -160,33 +166,31 @@ class FlyEnv:
         elif self.gs < -1.5:
             reward = reward - (-1.5 - self.gs) * 10
 
-
-        if self.more_than_half_circle == True:
-            if (self.deviation_altitude < self.TOLERANCE_ALTITUDE
-                    and self.deviation_speed < self.TOLERANCE_SPEED
-                    and self.deviation_roll < self.TOLERANCE_ROLL):
-                reward += 1000
+        # if self.more_than_half_circle == True:
+        #     if (self.deviation_altitude < self.TOLERANCE_ALTITUDE
+        #             and self.deviation_speed < self.TOLERANCE_SPEED
+        #             and self.deviation_roll < self.TOLERANCE_ROLL
+        #             and abs(self.speed_vector) < self.TOLERANCE_SPEED_VECTOR):
+        #         reward += 1000
 
         return reward
 
 
     def get_done(self):
-        if self.step_eps >= 1000:
-            logger.warn("reach 1000 steps, done!")
-            self.finalize()
+        if self.step_eps >= 300:
+            logger.warn("reach 300 steps, done!")
             return True
 
         elif self.altitude < 5000:
             logger.warn("latitude less than the least altitude, done!")
-            self.finalize()
             return True
 
-        if self.more_than_half_circle == True:
+        elif self.more_than_half_circle == True:
             if (self.deviation_altitude < self.TOLERANCE_ALTITUDE
                     and self.deviation_speed < self.TOLERANCE_SPEED
-                    and self.deviation_roll < self.TOLERANCE_ROLL):
+                    and self.deviation_roll < self.TOLERANCE_ROLL
+                    and abs(self.speed_vector) < self.TOLERANCE_SPEED_VECTOR):
                 logger.warn("spiral for half circle, done!")
-                self.finalize()
                 return True
 
         return False
