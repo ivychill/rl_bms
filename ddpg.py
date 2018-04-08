@@ -53,6 +53,8 @@ class DDPG:
         else:
             logger.error("Could not find old network weights")
 
+        self.critic_cost = 0
+
     def train(self):
         # logger.debug("......enter tain......")
         # Sample a random minibatch of N transitions from replay buffer

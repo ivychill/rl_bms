@@ -38,7 +38,7 @@ class FlyEnv:
         # self.altitude_start = self.RANGE_ALTITUDE[0] + (self.RANGE_ALTITUDE[1] - self.RANGE_ALTITUDE[0]) * random.uniform(0, 1)
         # self.speed_start = self.RANGE_SPEED[0] + (self.RANGE_SPEED[1] - self.RANGE_SPEED[0]) * random.uniform(0, 1)
         # self.roll_start = self.RANGE_ROLL[0] + (self.RANGE_ROLL[1] - self.RANGE_ROLL[0]) * random.uniform(0, 1)
-        self.altitude_start = 12000
+        self.altitude_start = 15000
         self.speed_start = 400
         self.roll_start = 75 * math.pi / 180
 

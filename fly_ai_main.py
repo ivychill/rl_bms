@@ -12,7 +12,7 @@ def playGame():
     agent = DDPG(env)
 
 
-    EPISODE_BATCH_SIZE = 100
+    EPISODE_BATCH_SIZE = 10
     epsilon = 1.0
     explore_count = 300000.0
     episode_count = 1000000
@@ -70,7 +70,7 @@ def playGame():
             logger.warn('episode %d, average reward %f' % (episode, average_reward))
 
             summary.value.add(tag='reward', simple_value=float(average_reward))
-            summary.value.add(tag='critic_loss', simple_value=float(env.critic_cost))
+            summary.value.add(tag='critic_loss', simple_value=float(agent.critic_cost))
             summary_writer.add_summary(summary, episode)
             summary_writer.flush()
 
