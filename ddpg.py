@@ -102,9 +102,7 @@ class DDPG:
 
     def noise_action(self,state,epsilon):
         # Select action a_t according to the current policy and exploration noise
-        # logger.debug("predict begin...")
         action = self.actor_network.action(state)
-        # logger.debug("predict end...")
         noise = np.zeros(self.action_dim)
 
         # added 2018-03-29
@@ -113,9 +111,6 @@ class DDPG:
         cur_roll = self.environment.roll
         cur_pitch = self.environment.pitch
         cur_speed_vector = self.environment.speed_vector
-
-        e_roll_last = 0
-        e_roll = self.environment.roll_start - cur_roll
 
         x_mu = 0.5 + (self.environment.roll_start - cur_roll) * 0.4
         x_mu = x_mu + cur_speed_vector * 1.0
@@ -136,7 +131,9 @@ class DDPG:
         return clipped_noise_action
 
     def action(self,state):
+        # logger.debug("predict begin...")
         action = self.actor_network.action(state)
+        # logger.debug("predict end...")
         return action
 
     def perceive(self,state,action,reward,next_state,done):

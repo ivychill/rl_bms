@@ -22,25 +22,18 @@ class FlyEnv:
         self.bms_action_addr = ("192.168.24.72", 4001)
         self.episode = 0
         self.step_eps = 0
-        # self.RANGE_ALTITUDE = (3000, 21000)
-        # self.RANGE_ALTITUDE = (6000, 18000)
-        self.RANGE_ALTITUDE = (10000, 14000)
+        self.RANGE_ALTITUDE = (6000, 18000)
+        # self.RANGE_ALTITUDE = (10000, 14000)
         # self.RANGE_SPEED = (160, 640)
+        # self.RANGE_SPEED = (360, 600)
         self.RANGE_SPEED = (320, 480)
         # self.RANGE_ROLL = (-math.pi, math.pi)
         # self.RANGE_PITCH = (-math.pi, math.pi)
         # self.RANGE_SPEED_VECTOR = (-math.pi, math.pi)
-        self.RANGE_ROLL = (math.pi*11/36, math.pi*19/36)
-        self.RANGE_PITCH = (-math.pi/9, math.pi/9)
-        self.RANGE_SPEED_VECTOR = (-math.pi/9, math.pi/9)
+        self.RANGE_ROLL = (72*math.pi/180, 84*math.pi/180)
+        self.RANGE_PITCH = (-10*math.pi/180, 10*math.pi/180)
+        self.RANGE_SPEED_VECTOR = (-10*math.pi/180, 10*math.pi/180)
         self.RANGE_ACTION = (1, 32766)
-
-        # self.altitude_start = self.RANGE_ALTITUDE[0] + (self.RANGE_ALTITUDE[1] - self.RANGE_ALTITUDE[0]) * random.uniform(0, 1)
-        # self.speed_start = self.RANGE_SPEED[0] + (self.RANGE_SPEED[1] - self.RANGE_SPEED[0]) * random.uniform(0, 1)
-        # self.roll_start = self.RANGE_ROLL[0] + (self.RANGE_ROLL[1] - self.RANGE_ROLL[0]) * random.uniform(0, 1)
-        self.altitude_start = 15000
-        self.speed_start = 400
-        self.roll_start = 75 * math.pi / 180
 
         self.TOLERANCE_ALTITUDE = 500
         self.TOLERANCE_SPEED = 20
@@ -49,9 +42,7 @@ class FlyEnv:
         self.TOLERANCE_SPEED_VECTOR = 5 * math.pi / 180
 
         self.more_than_half_circle = False
-
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
-
         self.send_ctrl_cmd('3')
 
 
@@ -77,6 +68,7 @@ class FlyEnv:
 
 
     def start_fly(self):
+        self.set_discrete_start_param()
         fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start, self.roll_start)
         self.yaw_start = self.fly_proxy.get_yaw()
         logger.debug("yaw_start: %s" % (self.yaw_start*180/math.pi))
@@ -95,6 +87,71 @@ class FlyEnv:
 
         pre_state = np.array(fly_state)
         return pre_state
+
+
+    def set_fixed_start_param(self):
+        self.altitude_start = 12000
+        self.speed_start = 400
+        self.roll_start = 75 * math.pi / 180
+
+    def set_continous_start_param(self):
+        self.altitude_start = self.RANGE_ALTITUDE[0] + (self.RANGE_ALTITUDE[1] - self.RANGE_ALTITUDE[0]) * random.uniform(0, 1)
+        self.speed_start = self.RANGE_SPEED[0] + (self.RANGE_SPEED[1] - self.RANGE_SPEED[0]) * random.uniform(0, 1)
+        self.roll_start = self.RANGE_ROLL[0] + (self.RANGE_ROLL[1] - self.RANGE_ROLL[0]) * random.uniform(0, 1)
+        logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s"
+                 % (self.altitude_start, self.speed_start, self.roll_start * 180 / math.pi))
+
+    def set_discrete_start_param(self):
+        params = ((6000, 400, 78 * math.pi / 180),
+                  (6000, 400, 80 * math.pi / 180),
+                  (6000, 400, 82 * math.pi / 180),
+                  (6000, 420, 78 * math.pi / 180),
+                  (6000, 420, 80 * math.pi / 180),
+                  (6000, 420, 82 * math.pi / 180),
+                  (6000, 440, 78 * math.pi / 180),
+                  (6000, 440, 80 * math.pi / 180),
+                  (6000, 440, 82 * math.pi / 180),
+                  (9000, 390, 77 * math.pi / 180),
+                  (9000, 390, 79 * math.pi / 180),
+                  (9000, 390, 81 * math.pi / 180),
+                  (9000, 410, 77 * math.pi / 180),
+                  (9000, 410, 79 * math.pi / 180),
+                  (9000, 410, 81 * math.pi / 180),
+                  (9000, 430, 77 * math.pi / 180),
+                  (9000, 430, 79 * math.pi / 180),
+                  (9000, 430, 81 * math.pi / 180),
+                  (12000, 380, 76 * math.pi / 180),
+                  (12000, 380, 78 * math.pi / 180),
+                  (12000, 380, 80 * math.pi / 180),
+                  (12000, 400, 76 * math.pi / 180),
+                  (12000, 400, 78 * math.pi / 180),
+                  (12000, 400, 80 * math.pi / 180),
+                  (12000, 420, 76 * math.pi / 180),
+                  (12000, 420, 78 * math.pi / 180),
+                  (12000, 420, 80 * math.pi / 180),
+                  (15000, 370, 75 * math.pi / 180),
+                  (15000, 370, 77 * math.pi / 180),
+                  (15000, 370, 79 * math.pi / 180),
+                  (15000, 390, 75 * math.pi / 180),
+                  (15000, 390, 77 * math.pi / 180),
+                  (15000, 390, 79 * math.pi / 180),
+                  (15000, 410, 75 * math.pi / 180),
+                  (15000, 410, 77 * math.pi / 180),
+                  (15000, 410, 79 * math.pi / 180),
+                  (18000, 360, 74 * math.pi / 180),
+                  (18000, 360, 76 * math.pi / 180),
+                  (18000, 360, 78 * math.pi / 180),
+                  (18000, 380, 74 * math.pi / 180),
+                  (18000, 380, 76 * math.pi / 180),
+                  (18000, 380, 78 * math.pi / 180),
+                  (18000, 400, 74 * math.pi / 180),
+                  (18000, 400, 76 * math.pi / 180),
+                  (18000, 400, 78 * math.pi / 180),
+                  )
+
+        self.altitude_start, self.speed_start, self.roll_start = params[np.random.randint(5*3*3)]
+        logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s"
+                 % (self.altitude_start, self.speed_start, self.roll_start * 180 / math.pi))
 
 
     # done: (altitude, speed, roll) = inception (altitude, speed, roll)

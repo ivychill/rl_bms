@@ -26,7 +26,7 @@ def playGame():
 
     # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
     s_t0 = np.zeros((5 * 4))
-    a_t = agent.noise_action(s_t0, epsilon)
+    a_t = agent.action(s_t0)
 
     logger.warn("Experiment Start...")
     for episode in range(episode_count):
@@ -78,7 +78,7 @@ def playGame():
                 if (train_indicator):
                     logger.info(
                         "Now we save model with reward %s, previous best reward %s" % (average_reward, best_reward))
-                    best_reward = episode_reward
+                    best_reward = average_reward
                     agent.saveNetwork()
 
             reward_sum = 0
