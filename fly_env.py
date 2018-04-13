@@ -20,7 +20,7 @@ class FlyEnv:
         # self.image_proxy = xmlrpclib.ServerProxy("http://192.168.20.129:5001/")
         self.bms_socket = socket(AF_INET, SOCK_DGRAM)
         self.bms_action_addr = ("192.168.24.72", 4001)
-        self.episode = 0
+        # self.episode = 0
         self.step_eps = 0
         self.RANGE_ALTITUDE = (6000, 18000)
         # self.RANGE_ALTITUDE = (10000, 14000)
@@ -43,7 +43,7 @@ class FlyEnv:
 
         self.more_than_half_circle = False
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
-        self.send_ctrl_cmd('3')
+        # self.send_ctrl_cmd('3')
 
 
     # "1": start
@@ -51,16 +51,18 @@ class FlyEnv:
     # "3": restart
     # TODO:
     def reset(self):
+        logger.warn("reboot...")
+        self.send_ctrl_cmd('3')
         logger.info('reset joystick...')
         self.fly_proxy.prepare()
         logger.info('start bms...')
         self.send_ctrl_cmd('1')
         logger.info('start fly control...')
         prestate = self.start_fly()
-        logger.info('reset over...')
+        logger.info('ai take over fly control...')
         self.step_eps = 0
+        self.more_than_half_circle = False
         # state = self.get_state()
-        # used for DDPG exploration input
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
         logger.debug("altitude: %s, speed: %s, roll: %s, pitch: %s, speed_vector: %s, yaw: %s, gs: %s"
                      % (self.altitude, self.speed, self.roll*180/math.pi, self.pitch*180/math.pi, self.speed_vector*180/math.pi, self.yaw*180/math.pi, self.gs))
@@ -68,7 +70,7 @@ class FlyEnv:
 
 
     def start_fly(self):
-        self.set_discrete_start_param()
+        self.set_narrow_discrete_start_param()
         fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start, self.roll_start)
         self.yaw_start = self.fly_proxy.get_yaw()
         logger.debug("yaw_start: %s" % (self.yaw_start*180/math.pi))
@@ -101,7 +103,19 @@ class FlyEnv:
         logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s"
                  % (self.altitude_start, self.speed_start, self.roll_start * 180 / math.pi))
 
-    def set_discrete_start_param(self):
+    def set_narrow_discrete_start_param(self):
+        params = ((6000, 420, 80 * math.pi / 180),
+                  (9000, 410, 79 * math.pi / 180),
+                  (12000, 400, 78 * math.pi / 180),
+                  (15000, 390, 77 * math.pi / 180),
+                  (18000, 380, 76 * math.pi / 180),
+                  )
+
+        self.altitude_start, self.speed_start, self.roll_start = params[np.random.randint(5)]
+        logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s"
+                 % (self.altitude_start, self.speed_start, self.roll_start * 180 / math.pi))
+
+    def set_wide_discrete_start_param(self):
         params = ((6000, 400, 78 * math.pi / 180),
                   (6000, 400, 80 * math.pi / 180),
                   (6000, 400, 82 * math.pi / 180),
@@ -253,18 +267,18 @@ class FlyEnv:
         return False
 
 
-    def finalize(self):
-        self.episode += 1
-        self.more_than_half_circle = False
-        if self.episode < 1:
-            logger.warn("stop...")
-            self.send_ctrl_cmd('2')
-            logger.info('stop return...')
-        else:
-            logger.warn("reboot...")
-            self.send_ctrl_cmd('3')
-            logger.info('reboot return...')
-            self.episode = 0
+    # def finalize(self):
+    #     self.episode += 1
+    #     self.more_than_half_circle = False
+    #     if self.episode < 1:
+    #         logger.warn("stop...")
+    #         self.send_ctrl_cmd('2')
+    #         logger.info('stop return...')
+    #     else:
+    #         logger.warn("reboot...")
+    #         self.send_ctrl_cmd('3')
+    #         logger.info('reboot return...')
+    #         self.episode = 0
 
 
     # 1: start; 2: stop; 3: reboot

@@ -14,6 +14,7 @@ from log_config import *
 # Hyper Parameters:
 REPLAY_BUFFER_SIZE = 1000000
 REPLAY_START_SIZE = 10000
+EXPLORE_COUNT = 1000000
 # REPLAY_START_SIZE = 2000
 BATCH_SIZE = 64
 GAMMA = 0.99
@@ -22,6 +23,8 @@ MODEL_PATH = './model'
 
 class DDPG:
     def __init__(self, env):
+        self.epsilon = 1.0
+
         self.name = 'DDPG' # name for uploading results
         self.environment = env
         # Randomly initialize actor network and critic network
@@ -57,6 +60,9 @@ class DDPG:
 
     def train(self):
         # logger.debug("......enter tain......")
+        self.epsilon -= 1.0 / EXPLORE_COUNT
+        self.epsilon = max(self.epsilon, 0.1)
+
         # Sample a random minibatch of N transitions from replay buffer
         minibatch = self.replay_buffer.get_batch(BATCH_SIZE)
         state_batch = np.asarray([data[0] for data in minibatch])
@@ -100,7 +106,7 @@ class DDPG:
     #     clipped_noise_action = np.clip(noise_action, 0, 1)
     #     return clipped_noise_action
 
-    def noise_action(self,state,epsilon):
+    def noise_action(self,state):
         # Select action a_t according to the current policy and exploration noise
         action = self.actor_network.action(state)
         noise = np.zeros(self.action_dim)
@@ -122,9 +128,9 @@ class DDPG:
         # z_mu = z_mu - cur_speed_vector * 2
         logger.debug("x_mu: %s, y_mu: %s, z_mu: %s" % (x_mu, y_mu, z_mu))
         # noise_action = [x_mu, y_mu, z_mu]
-        noise[0] = epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
-        noise[1] = epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
-        noise[2] = epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
+        noise[0] = self.epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
+        noise[1] = self.epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
+        noise[2] = self.epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
         noise_action = action + noise
         logger.debug("action: %s, noise: %s" % (action, noise))
         clipped_noise_action = np.clip(noise_action, 0, 1)
@@ -144,7 +150,7 @@ class DDPG:
 
         # Store transitions to replay start size then start training
         if self.replay_buffer.count() >  REPLAY_START_SIZE:
-            logger.debug("train...")
+            # logger.debug("train...")
             self.train()
 
         #if self.time_step % 10000 == 0:
