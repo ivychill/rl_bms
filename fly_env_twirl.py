@@ -65,7 +65,11 @@ class FlyEnvTwirl(FlyEnv):
 
     def start_fly(self):
         self.set_discrete_param()
-        fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start)
+        fly_state = self.fly_proxy.fly_till_twirl(self.altitude_start, self.speed_start)
+        if fly_state == None:
+            logger.warn("fly_till_twirl fail")
+            return None
+
         self.yaw_start = self.fly_proxy.get_yaw()
         logger.debug("yaw_start: %s" % (self.yaw_start*180/math.pi))
         # logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s, yaw_start: %s"

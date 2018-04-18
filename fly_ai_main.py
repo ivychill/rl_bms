@@ -1,15 +1,15 @@
 
-from ddpg_twirl import *
-from fly_env_twirl import *
+from ddpg_horizontal_circle import *
+from fly_env_horizontal_circle import *
 
-is_training = True         #True means Train, False means simply Run
+is_training = True  # True means Train, False means simply Run
 np.random.seed(1337)
 
 
 def playGame():
     train_indicator = is_training
-    env = FlyEnvTwirl()
-    agent = DDPG_TWIRL(env)
+    env = FlyEnvHorizontalCircle()
+    agent = DDPG_HORIZONTAL_CIRCLE(env)
 
     EPISODE_COUNT = 1000000
     EPISODE_BATCH_SIZE = 20
@@ -22,8 +22,8 @@ def playGame():
     summary_writer = tf.summary.FileWriter(SUMMARY_PATH)
     summary = tf.Summary()
 
-    # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
-    s_t0 = np.zeros((4 * 4))
+    # it take long to execute agent.noise_action first time, so execute a dummy run.
+    s_t0 = np.zeros((5 * 4))
     a_t = agent.action(s_t0)
 
     logger.warn("Experiment Start...")
@@ -41,7 +41,7 @@ def playGame():
 
         # logger.debug("s_t: %s" % s_t)
 
-        while not done: 
+        while not done:
             # Take noisy actions during agent training
             if (train_indicator):  # to make the first step
                 a_t = agent.noise_action(s_t)
@@ -51,17 +51,19 @@ def playGame():
 
             x_t1, r_t, done, _ = env.step(a_t)
             time.sleep(0.1)
-            s_t1 = np.append(s_t[4:],x_t1) # stack continious 4 frames
+            s_t1 = np.append(s_t[5:] ,x_t1) # stack continious 4 frames
+            logger.debug("episode: %d, step_eps: %d, step_reward: %s" % (episode, step_eps, r_t))
 
             if (train_indicator):
-                agent.perceive(s_t,a_t,r_t,s_t1,done) # save the transition in the buffer
+                agent.perceive(s_t ,a_t ,r_t ,s_t1 ,done) # save the transition in the buffer
 
             s_t = s_t1
             step += 1
             step_eps += 1
             episode_reward += r_t
 
-        logger.info("episode: %d, step_eps: %d, step: %d, episode_reward: %s, replay buffer: %d" % (episode, step_eps, step, episode_reward, agent.replay_buffer.count()))
+        logger.info("episode: %d, step_eps: %d, step: %d, episode_reward: %s, replay buffer: %d" %
+        (episode, step_eps, step, episode_reward, agent.replay_buffer.count()))
 
         reward_sum += episode_reward
         if episode % EPISODE_BATCH_SIZE == (EPISODE_BATCH_SIZE - 1):
@@ -88,12 +90,13 @@ def playGame():
                         episode_reward_test += reward_test
                     logger.debug("test episode %d, reward %s" % (episode_test, episode_reward_test))
                     reward_test_sum += episode_reward_test
-                    
+
                 average_reward_test = reward_test_sum / TEST_SIZE
                 logger.info("episode %d, test average reward %s" % (episode, average_reward_test))
 
                 if average_reward_test >= best_reward:
-                    logger.warn("save model with train reward %s, test reward %s, previous best reward %s" % (average_reward, average_reward_test, best_reward))
+                    logger.warn("save model with train reward %s, test reward %s, previous best reward %s" % (
+                    average_reward, average_reward_test, best_reward))
                     best_reward = average_reward_test
                     agent.saveNetwork()
 

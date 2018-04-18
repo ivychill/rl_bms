@@ -6,7 +6,8 @@ import math
 # Hyper Parameters
 LAYER1_SIZE = 300
 LAYER2_SIZE = 400
-LEARNING_RATE = 1e-4
+# LEARNING_RATE = 1e-4
+LEARNING_RATE = 5e-5
 TAU = 0.001
 # BATCH_SIZE = 64
 
