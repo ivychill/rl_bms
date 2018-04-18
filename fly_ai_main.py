@@ -1,6 +1,6 @@
 
-from ddpg import *
-from fly_env import *
+from ddpg_horizontal_circle import *
+from fly_env_horizontal_circle import *
 
 is_training = True         #True means Train, False means simply Run
 np.random.seed(1337)
@@ -8,12 +8,12 @@ np.random.seed(1337)
 
 def playGame():
     train_indicator = is_training
-    env = FlyEnv()
-    agent = DDPG(env)
+    env = FlyEnvHorizontalCircle()
+    agent = DDPG_HORIZONTAL_CIRCLE(env)
 
     EPISODE_COUNT = 1000000
-    EPISODE_BATCH_SIZE = 100
-    TEST_SIZE = 10
+    EPISODE_BATCH_SIZE = 20
+    TEST_SIZE = 4
     step = 0
     best_reward = -500
     reward_sum = 0
@@ -22,17 +22,23 @@ def playGame():
     summary_writer = tf.summary.FileWriter(SUMMARY_PATH)
     summary = tf.Summary()
 
-    # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
+    # it take long to execute agent.noise_action first time, so execute a dummy run.
     s_t0 = np.zeros((5 * 4))
     a_t = agent.action(s_t0)
 
     logger.warn("Experiment Start...")
-    for episode in range(EPISODE_COUNT):
+    # for episode in range(EPISODE_COUNT):
+    episode = 0
+    while episode <= EPISODE_COUNT:
         episode_reward = 0.
         step_eps = 0.
         done = False
         # x_t = env.reset()
         s_t = env.reset()
+        if s_t == None:
+            logger.warn("reset fail...")
+            continue
+
         # logger.debug("s_t: %s" % s_t)
 
         while not done: 
@@ -79,7 +85,7 @@ def playGame():
                         action_test = agent.action(state_test)  # direct action for test
                         x_t1_test, reward_test, done_test, _ = env.step(action_test)
                         time.sleep(0.1)
-                        state_test = np.append(s_t[5:], x_t1_test)  # stack continious 4 frames
+                        state_test = np.append(state_test[5:], x_t1_test)  # stack continious 4 frames
                         episode_reward_test += reward_test
                     logger.debug("test episode %d, reward %s" % (episode_test, episode_reward_test))
                     reward_test_sum += episode_reward_test
@@ -94,8 +100,10 @@ def playGame():
 
             reward_sum = 0
 
+        episode += 1
 
     logger.warn("Finish...")
+
 
 if __name__ == "__main__":
     playGame()
