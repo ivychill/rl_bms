@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf
-import numpy as np
-import math
-# from ou_noise import OUNoise
-from OU import OU
-from critic_network import CriticNetwork
-from actor_network import ActorNetwork
-from replay_buffer import ReplayBuffer
-from log_config import *
+from ddpg import *
 
 
 # Hyper Parameters:
@@ -20,7 +12,7 @@ GAMMA = 0.99
 MODEL_PATH = './model'
 
 
-class DDPG:
+class DDPG_TWIRL(DDPG):
     def __init__(self, env):
         self.name = 'DDPG' # name for uploading results
         self.environment = env

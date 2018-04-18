@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import xmlrpclib
-import time
-from log_config import *
-from socket import *
-import random
-import math
+from fly_env import *
 
 
 # This is spiral task
 # 启停的顺序极其重要，不能变
-class FlyEnv:
+class FlyEnvTwirl(FlyEnv):
     # state: altitude[3000,21000], speed[160,640], roll[-pi, pi], pitch[-pi, pi]
     # action: x(roll), y(pitch), z(speed)
     def __init__(self):
@@ -211,6 +205,99 @@ class FlyEnv:
         self.bms_socket.sendto("x:" + str(action_x), self.bms_action_addr)
         self.bms_socket.sendto("y:" + str(action_y), self.bms_action_addr)
         self.bms_socket.sendto("z:" + str(action_z), self.bms_action_addr)
+
+
+    def get_state(self):
+        self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
+        # self.altitude = self.fly_proxy.get_altitude()
+        normalized_altitude = (self.altitude - self.RANGE_ALTITUDE[0])/(self.RANGE_ALTITUDE[1]- self.RANGE_ALTITUDE[0])
+        # self.speed = self.fly_proxy.get_speed()
+        normalized_speed = (self.speed - self.RANGE_SPEED[0])/(self.RANGE_SPEED[1]- self.RANGE_SPEED[0])
+        # self.roll = self.fly_proxy.get_roll()
+        normalized_yaw = (self.yaw - self.RANGE_YAW[0])/(self.RANGE_YAW[1]- self.RANGE_YAW[0])
+        normalized_pitch = (self.pitch - self.RANGE_PITCH[0]) / (self.RANGE_PITCH[1] - self.RANGE_PITCH[0])
+        # normalized_speed_vector = (self.speed_vector - self.RANGE_SPEED_VECTOR[0]) / (self.RANGE_SPEED_VECTOR[1] - self.RANGE_SPEED_VECTOR[0])
+        # self.yaw = self.fly_proxy.get_yaw()
+        # self.gs = self.fly_proxy.get_gs()
+
+        logger.debug("altitude: %s, speed: %s, roll: %s, pitch: %s, speed_vector: %s, yaw: %s, gs: %s"
+                     % (self.altitude, self.speed, self.roll*180/math.pi, self.pitch*180/math.pi, self.speed_vector*180/math.pi, self.yaw*180/math.pi, self.gs))
+
+        # self.deviation_altitude = self.altitude/self.altitude_start - 1
+        # self.deviation_speed = self.speed/self.speed_start - 1
+        # self.deviation_roll = self.roll/self.roll_start - 1
+        self.deviation_altitude = abs(self.altitude- self.altitude_start)
+        self.deviation_speed = abs(self.speed - self.speed_start)
+        self.deviation_yaw = abs(self.yaw- self.yaw_start)
+
+        # return np.asarray(
+        #     [normalized_altitude, normalized_speed, normalized_roll, normalized_pitch, normalized_speed_vector])
+
+        return np.asarray([normalized_altitude, normalized_speed, normalized_pitch, normalized_yaw])
+
+
+    def get_reward(self):
+        reward = 0
+        # proposed_speed_vector = (self.altitude_start - self.altitude)/100 * math.pi/180
+        # reward = (self.TOLERANCE_SPEED_VECTOR - abs(self.speed_vector - proposed_speed_vector)) * 180/math.pi
+        # logger.debug("proposed_speed_vector: %s, reward: %s" % (proposed_speed_vector * 180/math.pi, reward))
+        # reward = abs(self.TOLERANCE_SPEED_VECTOR - abs(self.speed_vector - proposed_speed_vector))
+        reward = reward\
+                 - self.deviation_speed / self.TOLERANCE_SPEED \
+                 - self.deviation_yaw / self.TOLERANCE_YAW \
+                - self.deviation_altitude / self.TOLERANCE_ALTITUDE
+
+        # if self.deviation_altitude < 0:
+        #     reward = reward - abs(self.deviation_altitude) / self.TOLERANCE_ALTITUDE
+
+        # punish if gs > 8 and gs < -1.5
+        # reward = reward - max((self.gs - 8), 0) * 10 - abs(min((self.gs + 1.5), 0)) * 10
+        if self.gs > 7:
+            reward = reward - (self.gs - 7) * 10
+        elif self.gs < -1.5:
+            reward = reward - (-1.5 - self.gs) * 10
+
+        # if self.Turn_up_done == True:
+        #     if (self.deviation_altitude < self.TOLERANCE_ALTITUDE
+        #             and self.deviation_speed < self.TOLERANCE_SPEED
+        #             and self.deviation_roll < self.TOLERANCE_ROLL
+        #             and abs(self.speed_vector) < self.TOLERANCE_SPEED_VECTOR):
+        #         reward += 1000
+
+        return reward
+
+
+    def get_done(self):
+        if self.step_eps >= 300:
+            logger.warn("reach 300 steps, done!")
+            return True
+
+        elif self.altitude < 5000:
+            logger.warn("latitude less than the least altitude, done!")
+            return True
+
+        elif(abs(self.roll) < self.TOLERANCE_ROLL):
+            if ((self.pitch) < self.TOLERANCE_PITCH)\
+                    and self.pitch > 0:
+                logger.warn("Turn_up_done!")
+                return True
+
+        return False
+
+
+    def finalize(self):
+        self.episode += 1
+        self.Turn_up_done = False
+        if self.episode < 1:
+            logger.warn("stop...")
+            self.send_ctrl_cmd('2')
+            logger.info('stop return...')
+        else:
+            logger.warn("reboot...")
+            self.send_ctrl_cmd('3')
+            logger.info('reboot return...')
+            self.episode = 0
+
 
     # 1: start; 2: stop; 3: reboot
     def send_ctrl_cmd(self, cmd):

@@ -25,7 +25,7 @@ def playGame():
     summary = tf.Summary()
 
     # it take long to execute agent.noise_actionfirst time, so execute a dummy run.
-    s_t0 = np.zeros((5 * 4))
+    s_t0 = np.zeros((4 * 4))
     a_t = agent.action(s_t0)
 
     logger.warn("Experiment Start...")
@@ -50,7 +50,7 @@ def playGame():
 
             x_t1, r_t, done, _ = env.step(a_t)
             time.sleep(0.1)
-            s_t1 = np.append(s_t[5:],x_t1) # stack continious 4 frames
+            s_t1 = np.append(s_t[4:],x_t1) # stack continious 4 frames
 
             if (train_indicator):
                 agent.perceive(s_t,a_t,r_t,s_t1,done) # save the transition in the buffer
