@@ -7,6 +7,7 @@ from log_config import *
 from socket import *
 import random
 import math
+from ConfigReader import Config
 
 
 # This is spiral task
@@ -15,11 +16,11 @@ class FlyEnv(object):
     # state: altitude[3000,21000], speed[160,640], roll[-pi, pi], pitch[-pi, pi]
     # action: x(roll), y(pitch), z(speed)
     def __init__(self):
-        self.bms_control_proxy = xmlrpclib.ServerProxy("http://192.168.20.72:8000/")
-        self.fly_proxy = xmlrpclib.ServerProxy("http://192.168.20.118:4022/")
-        # self.image_proxy = xmlrpclib.ServerProxy("http://192.168.20.129:5001/")
+        config_obj = Config.singleton()
+        self.bms_control_proxy = xmlrpclib.ServerProxy(config_obj.config.get("BMS_CONTROL", "HTTP"))
+        self.fly_proxy = xmlrpclib.ServerProxy(config_obj.config.get("FLY_CONTROL", "HTTP"))
         self.bms_socket = socket(AF_INET, SOCK_DGRAM)
-        self.bms_action_addr = ("192.168.24.72", 4001)
+        self.bms_action_addr = (config_obj.config.get("BMS_ACTION", "IP"), int(config_obj.config.get("BMS_ACTION", "PORT")))
         self.step_eps = 0
         self.RANGE_ALTITUDE = (4000, 18000)
         # self.RANGE_ALTITUDE = (10000, 14000)
@@ -37,12 +38,11 @@ class FlyEnv(object):
 
         self.TOLERANCE_ALTITUDE = 500
         self.TOLERANCE_SPEED = 20
-        self.TOLERANCE_ROLL = 2 * math.pi / 180
+        self.TOLERANCE_ROLL = 5 * math.pi / 180
         self.TOLERANCE_YAW = 5 * math.pi / 180
-        self.TOLERANCE_PITCH = 5 * math.pi / 180
-        self.TOLERANCE_SPEED_VECTOR = 10 * math.pi / 180
+        self.TOLERANCE_SPEED_VECTOR = 5 * math.pi / 180
 
-        self.Turn_up_done = False
+        self.more_than_half_circle = False
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
         # self.send_ctrl_cmd('3')
 
