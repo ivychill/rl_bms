@@ -73,7 +73,7 @@ class FlyEnv(object):
     def start_fly(self):
         self.set_narrow_discrete_start_param()
         fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start, self.roll_start)
-        if fly_state == None:
+        if fly_state is None:
             logger.warn("fly_till fail")
             return None
 

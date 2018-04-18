@@ -35,7 +35,7 @@ def playGame():
         done = False
         # x_t = env.reset()
         s_t = env.reset()
-        if s_t == None:
+        if s_t is None:
             logger.warn("reset fail...")
             continue
 

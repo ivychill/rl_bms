@@ -14,6 +14,7 @@ MODEL_PATH = './model'
 
 class DDPG_TWIRL(DDPG):
     def __init__(self, env):
+        self.epsilon = 1.0
         self.name = 'DDPG' # name for uploading results
         self.environment = env
         # Randomly initialize actor network and critic network
@@ -47,43 +48,6 @@ class DDPG_TWIRL(DDPG):
 
         self.critic_cost = 0
 
-    def train(self):
-        # logger.debug("......enter tain......")
-        # Sample a random minibatch of N transitions from replay buffer
-        minibatch = self.replay_buffer.get_batch(BATCH_SIZE)
-        state_batch = np.asarray([data[0] for data in minibatch])
-        action_batch = np.asarray([data[1] for data in minibatch])
-        reward_batch = np.asarray([data[2] for data in minibatch])
-        next_state_batch = np.asarray([data[3] for data in minibatch])
-        done_batch = np.asarray([data[4] for data in minibatch])
-
-        # for action_dim = 1
-        action_batch = np.resize(action_batch,[BATCH_SIZE,self.action_dim])
-
-        # Calculate y_batch
-        
-        next_action_batch = self.actor_network.target_actions(next_state_batch)
-        q_value_batch = self.critic_network.target_q(next_state_batch,next_action_batch)
-        y_batch = []  
-        for i in range(len(minibatch)): 
-            if done_batch[i]:
-                y_batch.append(reward_batch[i])
-            else :
-                y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
-        y_batch = np.resize(y_batch,[BATCH_SIZE,1])
-        # Update critic by minimizing the loss L
-        self.critic_cost = self.critic_network.train(y_batch,state_batch,action_batch)
-
-        # Update the actor policy using the sampled gradient:
-        action_batch_for_gradients = self.actor_network.actions(state_batch)
-        q_gradient_batch = self.critic_network.gradients(state_batch,action_batch_for_gradients)
-
-        self.actor_network.train(q_gradient_batch,state_batch)
-
-        # Update the target networks
-        self.actor_network.update_target()
-        self.critic_network.update_target()
-
     # def noise_action(self,state):
     #     # Select action a_t according to the current policy and exploration noise
     #     action = self.actor_network.action(state)
@@ -92,7 +56,7 @@ class DDPG_TWIRL(DDPG):
     #     clipped_noise_action = np.clip(noise_action, 0, 1)
     #     return clipped_noise_action
 
-    def noise_action(self,state,epsilon):
+    def noise_action(self,state):
         # Select action a_t according to the current policy and exploration noise
         action = self.actor_network.action(state)
         noise = np.zeros(self.action_dim)
@@ -117,11 +81,9 @@ class DDPG_TWIRL(DDPG):
         # z_mu = z_mu - cur_speed_vector * 2
         logger.debug(" x_mu: %s , y_mu: %s, z_mu: %s " % (x_mu,y_mu,z_mu))
         # noise_action = [x_mu, y_mu, z_mu]
-        noise[0] = epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
-        noise[1] = epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
-        # noise = epsilon * self.OU.function(action, x_mu, 1.00, 0.10)
-
-        noise[2] = epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
+        noise[0] = self.epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
+        noise[1] = self.epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
+        noise[2] = self.epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
         noise_action = action + noise
         logger.debug("action: %s, noise: %s" % (action, noise))
         clipped_noise_action = np.clip(noise_action, 0, 1)

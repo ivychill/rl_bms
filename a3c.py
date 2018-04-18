@@ -186,7 +186,7 @@ class Worker():
                 self.env.firstRun()
                 observation = self.env.reset()
 
-                while observation == None:
+                while observation is None:
                     sleep(10)
                     logger.warn("firstRun failure.....")
                     self.env.firstRun()

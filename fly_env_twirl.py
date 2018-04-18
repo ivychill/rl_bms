@@ -39,7 +39,6 @@ class FlyEnvTwirl(FlyEnv):
 
         self.Turn_up_done = False
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
-        self.send_ctrl_cmd('3')
 
 
     # "1": start
@@ -47,6 +46,8 @@ class FlyEnvTwirl(FlyEnv):
     # "3": restart
     # TODO:
     def reset(self):
+        logger.warn("reboot...")
+        self.send_ctrl_cmd('3')
         logger.info('reset joystick...')
         self.fly_proxy.prepare()
         logger.info('start bms...')
@@ -55,6 +56,7 @@ class FlyEnvTwirl(FlyEnv):
         prestate = self.start_fly()
         logger.info('reset over...')
         self.step_eps = 0
+        self.Turn_up_done = False
         # state = self.get_state()
         # used for DDPG exploration input
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
@@ -66,7 +68,7 @@ class FlyEnvTwirl(FlyEnv):
     def start_fly(self):
         self.set_discrete_param()
         fly_state = self.fly_proxy.fly_till_twirl(self.altitude_start, self.speed_start)
-        if fly_state == None:
+        if fly_state is None:
             logger.warn("fly_till_twirl fail")
             return None
 
