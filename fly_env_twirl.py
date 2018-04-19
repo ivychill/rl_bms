@@ -152,6 +152,8 @@ class FlyEnvTwirl(FlyEnv):
         self.altitude_start, self.speed_start, self.roll_start = params[np.random.randint(5*3*3)]
         logger.debug("altitude_start: %s, speed_start: %s, roll_start: %s"
                  % (self.altitude_start, self.speed_start, self.roll_start * 180 / math.pi))
+
+
     def set_discrete_param(self):
         params = ((5000, 430),
                   (5000, 450),

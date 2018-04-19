@@ -3,4 +3,4 @@ rm *.log*
 cd ~/cf/ai_bms/log
 rm *.log*
 cd ~/cf/ai_bms/summary
-rm -r *
+rm -r events.out.tfevents*

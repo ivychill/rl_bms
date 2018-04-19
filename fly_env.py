@@ -22,18 +22,17 @@ class FlyEnv(object):
         self.bms_socket = socket(AF_INET, SOCK_DGRAM)
         self.bms_action_addr = (config_obj.config.get("BMS_ACTION", "IP"), int(config_obj.config.get("BMS_ACTION", "PORT")))
         self.step_eps = 0
-        self.RANGE_ALTITUDE = (4000, 18000)
+        self.RANGE_ALTITUDE = (6000, 18000)
         # self.RANGE_ALTITUDE = (10000, 14000)
         # self.RANGE_SPEED = (160, 640)
         # self.RANGE_SPEED = (360, 600)
-        self.RANGE_SPEED = (430, 485)
-        self.RANGE_YAW = (-5*math.pi/180, 5*math.pi/180)
+        self.RANGE_SPEED = (320, 480)
         # self.RANGE_ROLL = (-math.pi, math.pi)
         # self.RANGE_PITCH = (-math.pi, math.pi)
         # self.RANGE_SPEED_VECTOR = (-math.pi, math.pi)
-        # self.RANGE_ROLL = (72*math.pi/180, 84*math.pi/180)
+        self.RANGE_ROLL = (72*math.pi/180, 84*math.pi/180)
         self.RANGE_PITCH = (-10*math.pi/180, 10*math.pi/180)
-        self.RANGE_SPEED_VECTOR = (0*math.pi/180, 90*math.pi/180)
+        self.RANGE_SPEED_VECTOR = (-10*math.pi/180, 10*math.pi/180)
         self.RANGE_ACTION = (1, 32766)
 
         self.TOLERANCE_ALTITUDE = 500
@@ -44,13 +43,11 @@ class FlyEnv(object):
 
         self.more_than_half_circle = False
         self.altitude, self.speed, self.roll, self.pitch, self.speed_vector, self.yaw, self.gs = self.fly_proxy.get_fly_state()
-        # self.send_ctrl_cmd('3')
 
 
     # "1": start
     # "2": pause
     # "3": restart
-    # TODO:
     def reset(self):
         logger.warn("reboot...")
         self.send_ctrl_cmd('3')
@@ -95,15 +92,13 @@ class FlyEnv(object):
 
 
     # done: (altitude, speed, roll) = inception (altitude, speed, roll)
-    # Reward：-1/step,
     def step(self, action):
         self.take_action(action)
         self.step_eps += 1
         state = self.get_state()
-        if self.Turn_up_done == False:
-            if (abs(self.roll) < self.TOLERANCE_ROLL):
-                self.Turn_up_done = True
-                logger.debug('....roll_done....')
+        if self.more_than_half_circle == False:
+            if (abs(self.yaw - self.yaw_start + math.pi) < self.TOLERANCE_YAW or abs(self.yaw - self.yaw_start - math.pi) < self.TOLERANCE_YAW):
+                self.more_than_half_circle = True
         reward = self.get_reward()
         done = self.get_done()
         return state, reward, done, {}

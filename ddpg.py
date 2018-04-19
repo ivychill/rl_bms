@@ -24,13 +24,12 @@ MODEL_PATH = './model'
 class DDPG(object):
     def __init__(self, env):
         self.epsilon = 1.0
-
         self.name = 'DDPG' # name for uploading results
         self.environment = env
         # Randomly initialize actor network and critic network
         # with both their target networks
         # self.state_dim = env.observation_space.shape[0]
-        self.state_dim = 16
+        self.state_dim = 20
         # self.action_dim = env.action_space.shape[0]
         self.action_dim = 3
 
@@ -51,10 +50,12 @@ class DDPG(object):
         self.saver = tf.train.Saver()
         checkpoint = tf.train.get_checkpoint_state(MODEL_PATH)
         if checkpoint and checkpoint.model_checkpoint_path:
-            self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
-            logger.warn("Successfully loaded: %s" % (checkpoint.model_checkpoint_path))
+            path = checkpoint.model_checkpoint_path
+            self.saver.restore(self.sess, path)
+            self.time_step = int(path[path.rindex('-')+1:])
+            logger.warn("Successfully loaded: %s ,step: %d" % (path, self.time_step))
         else:
-            logger.error("Could not find old network weights")
+            logger.warn("Could not find old network weights")
 
         self.critic_cost = 0
 

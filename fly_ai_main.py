@@ -95,8 +95,7 @@ def playGame():
                 logger.info("episode %d, test average reward %s" % (episode, average_reward_test))
 
                 if average_reward_test >= best_reward:
-                    logger.warn("save model with train reward %s, test reward %s, previous best reward %s" % (
-                    average_reward, average_reward_test, best_reward))
+                    logger.warn("save model with train reward %s, test reward %s, previous best reward %s" % (average_reward, average_reward_test, best_reward))
                     best_reward = average_reward_test
                     agent.saveNetwork()
 
