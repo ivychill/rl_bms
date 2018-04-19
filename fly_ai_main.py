@@ -12,6 +12,7 @@ def playGame():
     agent = DDPG_HORIZONTAL_CIRCLE(env)
 
     EPISODE_COUNT = 1000000
+    TEST_START_SIZE = 100
     EPISODE_BATCH_SIZE = 20
     TEST_SIZE = 4
     step = 0
@@ -94,7 +95,7 @@ def playGame():
                 average_reward_test = reward_test_sum / TEST_SIZE
                 logger.info("episode %d, test average reward %s" % (episode, average_reward_test))
 
-                if average_reward_test >= best_reward:
+                if episode >= TEST_START_SIZE and average_reward_test >= best_reward:
                     logger.warn("save model with train reward %s, test reward %s, previous best reward %s" % (average_reward, average_reward_test, best_reward))
                     best_reward = average_reward_test
                     agent.saveNetwork()

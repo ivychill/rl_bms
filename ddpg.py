@@ -14,7 +14,7 @@ from log_config import *
 # Hyper Parameters:
 REPLAY_BUFFER_SIZE = 1000000
 REPLAY_START_SIZE = 10000
-EXPLORE_COUNT = 1000000
+EXPLORE_COUNT = 300000
 # REPLAY_START_SIZE = 2000
 BATCH_SIZE = 64
 GAMMA = 0.99
@@ -53,7 +53,9 @@ class DDPG(object):
             path = checkpoint.model_checkpoint_path
             self.saver.restore(self.sess, path)
             self.time_step = int(path[path.rindex('-')+1:])
-            logger.warn("Successfully loaded: %s ,step: %d" % (path, self.time_step))
+            self.epsilon -= 1.0 * self.time_step / EXPLORE_COUNT
+            self.epsilon = max(self.epsilon, 0.1)
+            logger.warn("Successfully loaded: %s, step: %d, epsilon: %s" % (path, self.time_step, self.epsilon))
         else:
             logger.warn("Could not find old network weights")
 
