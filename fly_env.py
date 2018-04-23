@@ -22,6 +22,8 @@ class FlyEnv(object):
         self.bms_socket = socket(AF_INET, SOCK_DGRAM)
         self.bms_action_addr = (config_obj.config.get("BMS_ACTION", "IP"), int(config_obj.config.get("BMS_ACTION", "PORT")))
         self.step_eps = 0
+        self.MAX_STEP = 300
+        self.MIN_ALTITUDE = 5000
         self.RANGE_ALTITUDE = (6000, 18000)
         # self.RANGE_ALTITUDE = (10000, 14000)
         # self.RANGE_SPEED = (160, 640)
@@ -68,7 +70,7 @@ class FlyEnv(object):
 
 
     def start_fly(self):
-        self.set_narrow_discrete_start_param()
+        self.set_wide_discrete_start_param()
         fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start, self.roll_start)
         if fly_state is None:
             logger.warn("fly_till fail")
@@ -108,7 +110,7 @@ class FlyEnv(object):
         action_x = round(self.RANGE_ACTION[0] + (self.RANGE_ACTION[1] - self.RANGE_ACTION[0]) * action[0])
         action_y = round(self.RANGE_ACTION[0] + (self.RANGE_ACTION[1] - self.RANGE_ACTION[0]) * action[1])
         action_z = round(self.RANGE_ACTION[0] + (self.RANGE_ACTION[1] - self.RANGE_ACTION[0]) * action[2])
-        logger.debug("action_x: %s ,action_y: %s, action_z: %s " % (action_x, action_y, action_z))
+        logger.debug("action_x: %d ,action_y: %d, action_z: %d " % (action_x, action_y, action_z))
         self.bms_socket.sendto("x:" + str(action_x), self.bms_action_addr)
         self.bms_socket.sendto("y:" + str(action_y), self.bms_action_addr)
         self.bms_socket.sendto("z:" + str(action_z), self.bms_action_addr)

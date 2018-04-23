@@ -16,7 +16,7 @@ def playGame():
     EPISODE_BATCH_SIZE = 20
     TEST_SIZE = 4
     step = 0
-    best_reward = -500
+    best_reward = -1000
     reward_sum = 0
     SUMMARY_PATH = './summary'
 
@@ -48,7 +48,7 @@ def playGame():
                 a_t = agent.noise_action(s_t)
             else:
                 a_t = agent.action(s_t)
-            # logger.debug("a_t: %s" % a_t)
+                # a_t = agent.expert_action(s_t)
 
             x_t1, r_t, done, _ = env.step(a_t)
             time.sleep(0.1)
@@ -82,6 +82,9 @@ def playGame():
                     episode_reward_test = 0
                     done_test = False
                     state_test = env.reset()
+                    if state_test is None:
+                        logger.warn("test reset fail...")
+                        continue
                     while not done_test:
                         # env.render()
                         action_test = agent.action(state_test)  # direct action for test

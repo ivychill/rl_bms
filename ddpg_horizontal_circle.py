@@ -22,9 +22,12 @@ class DDPG_HORIZONTAL_CIRCLE(DDPG):
         z_mu = z_mu + (self.environment.roll_start - cur_roll) * 0.5
         # z_mu = z_mu - cur_speed_vector * 2
         logger.debug("x_mu: %s, y_mu: %s, z_mu: %s" % (x_mu, y_mu, z_mu))
-        noise[0] = self.epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
-        noise[1] = self.epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
-        noise[2] = self.epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
+        # noise[0] = self.epsilon * self.OU.function(action[0], x_mu, 1.00, 0.10)
+        # noise[1] = self.epsilon * self.OU.function(action[1], y_mu, 1.00, 0.10)
+        # noise[2] = self.epsilon * self.OU.function(action[2], z_mu, 1.00, 0.10)
+        noise[0] = self.epsilon_expert * (x_mu - action[0]) + self.epsilon_random * np.random.randn(1)
+        noise[1] = self.epsilon_expert * (y_mu - action[0]) + self.epsilon_random * np.random.randn(1)
+        noise[2] = self.epsilon_expert * (z_mu - action[0]) + self.epsilon_random * np.random.randn(1)
         noise_action = action + noise
         logger.debug("action: %s, noise: %s" % (action, noise))
         clipped_noise_action = np.clip(noise_action, 0, 1)

@@ -90,6 +90,13 @@ class FlyEnvHorizontalCircle(FlyEnv):
                  - self.deviation_roll / self.TOLERANCE_ROLL\
                  - abs(self.speed_vector) / self.TOLERANCE_SPEED_VECTOR
 
+        # because done is true
+        if self.altitude < self.MIN_ALTITUDE:
+            reward = reward - (self.deviation_altitude / self.TOLERANCE_ALTITUDE
+                    + self.deviation_speed / self.TOLERANCE_SPEED
+                    + self.deviation_roll / self.TOLERANCE_ROLL
+                    + abs(self.speed_vector) / self.TOLERANCE_SPEED_VECTOR) * (self.MAX_STEP - self.step_eps)
+
         # punish if gs > 8 and gs < -1.5
         # reward = reward - max((self.gs - 8), 0) * 10 - abs(min((self.gs + 1.5), 0)) * 10
         if self.gs > 8:
@@ -108,11 +115,11 @@ class FlyEnvHorizontalCircle(FlyEnv):
 
 
     def get_done(self):
-        if self.step_eps >= 300:
+        if self.step_eps >= self.MAX_STEP:
             logger.warn("reach 300 steps, done!")
             return True
 
-        elif self.altitude < 5000:
+        elif self.altitude < self.MIN_ALTITUDE:
             logger.warn("latitude less than the least altitude, done!")
             return True
 

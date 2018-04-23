@@ -14,7 +14,7 @@ from log_config import *
 # Hyper Parameters:
 REPLAY_BUFFER_SIZE = 1000000
 REPLAY_START_SIZE = 10000
-EXPLORE_COUNT = 300000
+EXPLORE_COUNT = 1000000
 # REPLAY_START_SIZE = 2000
 BATCH_SIZE = 64
 GAMMA = 0.99
@@ -23,16 +23,18 @@ MODEL_PATH = './model'
 
 class DDPG(object):
     def __init__(self, env):
-        self.epsilon = 1.0
         self.name = 'DDPG' # name for uploading results
         self.environment = env
+        self.epsilon_expert_range = (1.0, 0.0)
+        self.epsilon_expert = self.epsilon_expert_range[0]
+        self.epsilon_random_range = (0.02, 0.01)
+        self.epsilon_random = self.epsilon_random_range[0]
         # Randomly initialize actor network and critic network
         # with both their target networks
         # self.state_dim = env.observation_space.shape[0]
         self.state_dim = 20
         # self.action_dim = env.action_space.shape[0]
         self.action_dim = 3
-
         self.time_step = 0
         self.sess = tf.InteractiveSession()
 
@@ -53,19 +55,25 @@ class DDPG(object):
             path = checkpoint.model_checkpoint_path
             self.saver.restore(self.sess, path)
             self.time_step = int(path[path.rindex('-')+1:])
-            self.epsilon -= 1.0 * self.time_step / EXPLORE_COUNT
-            self.epsilon = max(self.epsilon, 0.1)
-            logger.warn("Successfully loaded: %s, step: %d, epsilon: %s" % (path, self.time_step, self.epsilon))
+            self.epsilon_expert -= (self.epsilon_expert_range[0] - self.epsilon_expert_range[1]) * self.time_step / EXPLORE_COUNT
+            self.epsilon_expert = max(self.epsilon_expert, self.epsilon_expert_range[1])
+            self.epsilon_random -= (self.epsilon_random_range[0] - self.epsilon_random_range[1]) * self.time_step / EXPLORE_COUNT
+            self.epsilon_random = max(self.epsilon_random, self.epsilon_random_range[1])
+            logger.warn("Successfully loaded: %s, step: %d, epsilon_expert: %s, epsilon_random: %s"
+                        % (path, self.time_step, self.epsilon_expert, self.epsilon_random))
         else:
             logger.warn("Could not find old network weights")
 
         self.critic_cost = 0
 
     def train(self):
-        # logger.debug("......enter tain......")
-        self.epsilon -= 1.0 / EXPLORE_COUNT
-        self.epsilon = max(self.epsilon, 0.1)
-
+        self.time_step = self.time_step + 1
+        self.epsilon_expert -= (self.epsilon_expert_range[0] - self.epsilon_expert_range[1]) / EXPLORE_COUNT
+        self.epsilon_expert = max(self.epsilon_expert, self.epsilon_expert_range[1])
+        self.epsilon_random -= (self.epsilon_random_range[0] - self.epsilon_random_range[1]) / EXPLORE_COUNT
+        self.epsilon_random = max(self.epsilon_random, self.epsilon_random_range[1])
+        logger.deug("step: %d, epsilon_expert: %s, epsilon_random: %s"
+                    % (self.time_step, self.epsilon_expert, self.epsilon_random))
         # Sample a random minibatch of N transitions from replay buffer
         minibatch = self.replay_buffer.get_batch(BATCH_SIZE)
         state_batch = np.asarray([data[0] for data in minibatch])
@@ -109,17 +117,17 @@ class DDPG(object):
     #     clipped_noise_action = np.clip(noise_action, 0, 1)
     #     return clipped_noise_action
 
-    def noise_action(self,state):
-        # Select action a_t according to the current policy and exploration noise
-        action = self.actor_network.action(state)
-        noise = np.zeros(self.action_dim)
-        noise[0] = self.epsilon * self.OU.function(action[0], 0.5, 1.00, 0.10)
-        noise[1] = self.epsilon * self.OU.function(action[1], 0.5, 1.00, 0.10)
-        noise[2] = self.epsilon * self.OU.function(action[2], 0.5, 1.00, 0.10)
-        noise_action = action + noise
-        logger.debug("action: %s, noise: %s" % (action, noise))
-        clipped_noise_action = np.clip(noise_action, 0, 1)
-        return clipped_noise_action
+    # def noise_action(self,state):
+    #     # Select action a_t according to the current policy and exploration noise
+    #     action = self.actor_network.action(state)
+    #     noise = np.zeros(self.action_dim)
+    #     noise[0] = self.epsilon * self.OU.function(action[0], 0.5, 1.00, 0.10)
+    #     noise[1] = self.epsilon * self.OU.function(action[1], 0.5, 1.00, 0.10)
+    #     noise[2] = self.epsilon * self.OU.function(action[2], 0.5, 1.00, 0.10)
+    #     noise_action = action + noise
+    #     logger.debug("action: %s, noise: %s" % (action, noise))
+    #     clipped_noise_action = np.clip(noise_action, 0, 1)
+    #     return clipped_noise_action
 
     def action(self,state):
         # logger.debug("predict begin...")
@@ -131,7 +139,7 @@ class DDPG(object):
         # Store transition (s_t,a_t,r_t,s_{t+1}) in replay buffer
         self.replay_buffer.add(state,action,reward,next_state,done)
 
-        self.time_step = self.time_step + 1
+        # self.time_step = self.time_step + 1
 
         # Store transitions to replay start size then start training
         if self.replay_buffer.count() >  REPLAY_START_SIZE:
