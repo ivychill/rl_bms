@@ -72,7 +72,7 @@ class DDPG(object):
         self.epsilon_expert = max(self.epsilon_expert, self.epsilon_expert_range[1])
         self.epsilon_random -= (self.epsilon_random_range[0] - self.epsilon_random_range[1]) / EXPLORE_COUNT
         self.epsilon_random = max(self.epsilon_random, self.epsilon_random_range[1])
-        logger.deug("step: %d, epsilon_expert: %s, epsilon_random: %s"
+        logger.debug("step: %d, epsilon_expert: %s, epsilon_random: %s"
                     % (self.time_step, self.epsilon_expert, self.epsilon_random))
         # Sample a random minibatch of N transitions from replay buffer
         minibatch = self.replay_buffer.get_batch(BATCH_SIZE)
