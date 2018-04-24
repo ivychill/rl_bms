@@ -45,10 +45,16 @@ def playGame():
         while not done:
             # Take noisy actions during agent training
             if (train_indicator):  # to make the first step
-                a_t = agent.noise_action(s_t)
+                # a_t = agent.noise_action(s_t)
+                if (episode % 3) == 0:
+                    a_t = agent.ai_and_random_action(s_t)
+                else:
+                    a_t = agent.ai_and_expert_action(s_t)
+
             else:
-                a_t = agent.action(s_t)
-                # a_t = agent.expert_action(s_t)
+                # a_t = agent.action(s_t)
+                a_t = agent.expert_and_random_action()
+                # a_t = agent.opposite_action(s_t)        # opposite
 
             x_t1, r_t, done, _ = env.step(a_t)
             time.sleep(0.1)

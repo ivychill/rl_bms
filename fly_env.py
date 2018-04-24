@@ -33,6 +33,7 @@ class FlyEnv(object):
         # self.RANGE_PITCH = (-math.pi, math.pi)
         # self.RANGE_SPEED_VECTOR = (-math.pi, math.pi)
         self.RANGE_ROLL = (72*math.pi/180, 84*math.pi/180)
+        # self.RANGE_ROLL = (-72*math.pi/180, -84*math.pi/180)          # opposite
         self.RANGE_PITCH = (-10*math.pi/180, 10*math.pi/180)
         self.RANGE_SPEED_VECTOR = (-10*math.pi/180, 10*math.pi/180)
         self.RANGE_ACTION = (1, 32766)
@@ -70,6 +71,7 @@ class FlyEnv(object):
 
 
     def start_fly(self):
+        # self.set_opposite_start_param()     # opposite
         self.set_wide_discrete_start_param()
         fly_state = self.fly_proxy.fly_till(self.altitude_start, self.speed_start, self.roll_start)
         if fly_state is None:

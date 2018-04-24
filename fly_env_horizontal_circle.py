@@ -6,6 +6,11 @@ class FlyEnvHorizontalCircle(FlyEnv):
         self.speed_start = 400
         self.roll_start = 75 * math.pi / 180
 
+    def set_opposite_start_param(self):
+        self.altitude_start = 12000
+        self.speed_start = 400
+        self.roll_start = -75 * math.pi / 180
+
     def set_continous_start_param(self):
         self.altitude_start = self.RANGE_ALTITUDE[0] + (self.RANGE_ALTITUDE[1] - self.RANGE_ALTITUDE[0]) * random.uniform(0, 1)
         self.speed_start = self.RANGE_SPEED[0] + (self.RANGE_SPEED[1] - self.RANGE_SPEED[0]) * random.uniform(0, 1)

@@ -12,10 +12,9 @@ from log_config import *
 
 
 # Hyper Parameters:
-REPLAY_BUFFER_SIZE = 1000000
-REPLAY_START_SIZE = 10000
-EXPLORE_COUNT = 1000000
-# REPLAY_START_SIZE = 2000
+REPLAY_BUFFER_SIZE = int(1e6)
+REPLAY_START_SIZE = int(1e4)
+EXPLORE_COUNT = 1e7
 BATCH_SIZE = 64
 GAMMA = 0.99
 MODEL_PATH = './model'
@@ -27,7 +26,7 @@ class DDPG(object):
         self.environment = env
         self.epsilon_expert_range = (1.0, 0.0)
         self.epsilon_expert = self.epsilon_expert_range[0]
-        self.epsilon_random_range = (0.02, 0.01)
+        self.epsilon_random_range = (0.01, 0.01)
         self.epsilon_random = self.epsilon_random_range[0]
         # Randomly initialize actor network and critic network
         # with both their target networks
@@ -90,11 +89,12 @@ class DDPG(object):
         next_action_batch = self.actor_network.target_actions(next_state_batch)
         q_value_batch = self.critic_network.target_q(next_state_batch,next_action_batch)
         y_batch = []  
-        for i in range(len(minibatch)): 
-            if done_batch[i]:
-                y_batch.append(reward_batch[i])
-            else :
-                y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
+        for i in range(len(minibatch)):
+            y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
+            # if done_batch[i]:
+            #     y_batch.append(reward_batch[i])
+            # else :
+            #     y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
         y_batch = np.resize(y_batch,[BATCH_SIZE,1])
         # Update critic by minimizing the loss L
         self.critic_cost = self.critic_network.train(y_batch,state_batch,action_batch)
@@ -133,6 +133,14 @@ class DDPG(object):
         # logger.debug("predict begin...")
         action = self.actor_network.action(state)
         # logger.debug("predict end...")
+        return action
+
+    def opposite_action(self,state):
+        logger.debug("state: %s" % (state))
+        action = self.actor_network.action(state)
+        logger.debug("action: %s" % (action))
+        action[0] = 1 - action[0]
+        logger.debug("opposite action: %s" % (action))
         return action
 
     def perceive(self,state,action,reward,next_state,done):
