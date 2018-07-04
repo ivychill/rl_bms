@@ -12,10 +12,10 @@ from log_config import *
 
 
 # Hyper Parameters:
-REPLAY_BUFFER_SIZE = int(1e6)
+REPLAY_BUFFER_SIZE = int(1e4)
 REPLAY_START_SIZE = int(1e4)
-EXPLORE_COUNT = 1e7
-BATCH_SIZE = 64
+EXPLORE_COUNT = 2e6
+BATCH_SIZE = 256
 GAMMA = 0.99
 MODEL_PATH = './model'
 
@@ -24,14 +24,14 @@ class DDPG(object):
     def __init__(self, env):
         self.name = 'DDPG' # name for uploading results
         self.environment = env
-        self.epsilon_expert_range = (1.0, 0.0)
+        self.epsilon_expert_range = (1.0, 0.1)
         self.epsilon_expert = self.epsilon_expert_range[0]
-        self.epsilon_random_range = (0.01, 0.01)
+        self.epsilon_random_range = (0.1, 0.01)
         self.epsilon_random = self.epsilon_random_range[0]
         # Randomly initialize actor network and critic network
         # with both their target networks
         # self.state_dim = env.observation_space.shape[0]
-        self.state_dim = 20
+        self.state_dim = 16
         # self.action_dim = env.action_space.shape[0]
         self.action_dim = 3
         self.time_step = 0
@@ -130,9 +130,8 @@ class DDPG(object):
     #     return clipped_noise_action
 
     def action(self,state):
-        # logger.debug("predict begin...")
         action = self.actor_network.action(state)
-        # logger.debug("predict end...")
+        logger.debug("action: %s" % (action))
         return action
 
     def opposite_action(self,state):
@@ -150,7 +149,7 @@ class DDPG(object):
         # self.time_step = self.time_step + 1
 
         # Store transitions to replay start size then start training
-        if self.replay_buffer.count() >  REPLAY_START_SIZE:
+        if self.replay_buffer.count() >=  REPLAY_START_SIZE:
             # logger.debug("train...")
             self.train()
 
@@ -163,6 +162,6 @@ class DDPG(object):
         #     self.exploration_noise.reset()
 
     def saveNetwork(self):
-        # logger.warn("time step: %s, save model" % (self.time_step))
+        logger.warn("time step: %s, save model" % (self.time_step))
         ckpt_file = os.path.join(MODEL_PATH, 'DDPG')
         self.saver.save(self.sess, ckpt_file, global_step = self.time_step)
